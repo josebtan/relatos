@@ -2,7 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { 
   getFirestore, collection, addDoc, query, orderBy, onSnapshot,
-  updateDoc, doc, increment, serverTimestamp, deleteDoc, getDocs 
+  updateDoc, doc, increment, serverTimestamp, deleteDoc, getDocs,
+  where, getCountFromServer
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 // Configuración de Firebase
@@ -71,7 +72,8 @@ async function submitPost() {
       expiresAt: expirationTime,
       likes: 0,
       dislikes: 0,
-      timestamp: serverTimestamp()
+      timestamp: serverTimestamp(),
+      commentCount: 0
     });
     
     messageInput.value = "";
@@ -152,6 +154,58 @@ function setupVotingButtons(postId) {
   dislikeButton?.addEventListener("click", () => handleVote("dislike", postId));
 }
 
+// Función para enviar comentarios
+window.submitComment = async function(postId) {
+  const commentInput = document.getElementById(`comment-input-${postId}`);
+  const commentText = commentInput.value.trim();
+  
+  if (commentText === "") {
+    alert("No puedes enviar un comentario vacío.");
+    return;
+  }
+
+  try {
+    const encryptedComment = encryptMessage(commentText);
+    const postRef = doc(db, "mensajes", postId);
+    const postSnap = await getDoc(postRef);
+    
+    if (!postSnap.exists()) {
+      throw new Error("El post no existe");
+    }
+    
+    await addDoc(collection(db, "mensajes", postId, "comentarios"), {
+      texto: encryptedComment,
+      timestamp: serverTimestamp(),
+      expiresAt: postSnap.data().expiresAt
+    });
+    
+    // Actualizar contador de comentarios
+    await updateDoc(postRef, {
+      commentCount: increment(1)
+    });
+    
+    commentInput.value = "";
+  } catch (error) {
+    console.error("Error al comentar:", error);
+    alert("Ocurrió un error al publicar el comentario");
+  }
+}
+
+// Función para renderizar comentarios
+function renderComments(postId, comments) {
+  const commentsContainer = document.getElementById(`comments-${postId}`);
+  if (!commentsContainer) return;
+  
+  commentsContainer.innerHTML = comments.map(comment => `
+    <div class="comment">
+      <div class="comment-content">${decryptMessage(comment.texto)}</div>
+      <div class="comment-footer">
+        <small>${comment.timestamp?.toDate().toLocaleString() || 'Ahora'}</small>
+      </div>
+    </div>
+  `).join("");
+}
+
 // Borrar mensajes expirados
 async function deleteExpiredMessages() {
   const now = Date.now();
@@ -217,10 +271,38 @@ onSnapshot(q, (snapshot) => {
             </button>
           </div>
         </div>
+        <div class="comments-section">
+          <div class="comments-header">
+            <h4>Comentarios (${data.commentCount || 0})</h4>
+          </div>
+          <div id="comments-${docSnap.id}" class="comments-container"></div>
+          <div class="comment-form">
+            <textarea 
+              id="comment-input-${docSnap.id}" 
+              placeholder="Escribe un comentario..."
+              maxlength="500"
+            ></textarea>
+            <button onclick="submitComment('${docSnap.id}')">Comentar</button>
+          </div>
+        </div>
       `;
 
       postsContainer.appendChild(postDiv);
       setupVotingButtons(docSnap.id);
+
+      // Escuchar comentarios en tiempo real
+      const commentsQuery = query(
+        collection(db, "mensajes", docSnap.id, "comentarios"),
+        orderBy("timestamp", "asc")
+      );
+      
+      onSnapshot(commentsQuery, (commentSnapshot) => {
+        const comments = commentSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        renderComments(docSnap.id, comments);
+      });
     }
   });
 
