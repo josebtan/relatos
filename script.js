@@ -12,7 +12,9 @@ import {
   serverTimestamp, 
   deleteDoc, 
   getDocs,
-  getDoc
+  getDoc,
+  limit,
+  startAfter
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -31,9 +33,15 @@ const SECRET_KEY = "claveSecreta123";
 
 // Variables de control
 let isUpdating = false;
+let lastVisible = null;
+let loading = false;
+let hasMore = true;
+const initialLoadLimit = 15;
+const loadMoreLimit = 8;
 const voteQueue = [];
 const messageInput = document.getElementById("message");
 const charCount = document.getElementById("char-count");
+const loadingSpinner = document.getElementById('loading-spinner');
 
 // Configurar contador de caracteres
 messageInput.addEventListener("input", updateCharCount);
@@ -260,75 +268,129 @@ function updateCountdown() {
   setTimeout(updateCountdown, 1000);
 }
 
-// Cargar y mostrar publicaciones
-const q = query(collection(db, "mensajes"), orderBy("expiresAt", "desc"));
-onSnapshot(q, (snapshot) => {
-  const postsContainer = document.getElementById("posts");
-  postsContainer.innerHTML = "";
+// Manejo de carga de publicaciones
+function showLoader() { loadingSpinner.style.display = 'block'; }
+function hideLoader() { loadingSpinner.style.display = 'none'; }
+
+async function loadPosts(loadMore = false) {
+  if (loading || !hasMore) return;
   
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const timeLeft = data.expiresAt - Date.now();
-    
-    if (timeLeft > 0) {
-      const decryptedMessage = decryptMessage(data.texto);
-      const postDiv = document.createElement("div");
-      postDiv.className = "post";
-      postDiv.innerHTML = `
-        <div class="post-header">
-          <span>Edad: ${data.edad || "N/A"}</span>
-          <span>Sexo: ${data.sexo}</span>
-        </div>
-        <div class="post-content">${decryptedMessage}</div>
-        <div class="post-footer">
-          <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
-          <div class="vote-buttons">
-            <button class="like-btn" id="like-${docSnap.id}">
-              👍 ${data.likes}
-            </button>
-            <button class="dislike-btn" id="dislike-${docSnap.id}">
-              👎 ${data.dislikes}
-            </button>
-          </div>
-        </div>
-        <div class="comments-section">
-          <div class="comments-header">
-            <h4>Comentarios (${data.commentCount || 0})</h4>
-          </div>
-          <div id="comments-${docSnap.id}" class="comments-container"></div>
-          <div class="comment-form">
-            <textarea 
-              id="comment-input-${docSnap.id}" 
-              placeholder="Escribe un comentario..."
-              maxlength="500"
-            ></textarea>
-            <button onclick="submitComment('${docSnap.id}')">Comentar</button>
-          </div>
-        </div>
-      `;
-
-      postsContainer.appendChild(postDiv);
-      setupVotingButtons(docSnap.id);
-
-      // Escuchar comentarios en tiempo real
-      const commentsQuery = query(
-        collection(db, "mensajes", docSnap.id, "comentarios"),
-        orderBy("timestamp", "asc")
+  showLoader();
+  loading = true;
+  
+  try {
+    let q;
+    if (loadMore && lastVisible) {
+      q = query(
+        collection(db, "mensajes"),
+        orderBy("expiresAt", "desc"),
+        startAfter(lastVisible),
+        limit(loadMoreLimit)
       );
-      
-      onSnapshot(commentsQuery, (commentSnapshot) => {
-        const comments = commentSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        renderComments(docSnap.id, comments);
-      });
+    } else {
+      q = query(
+        collection(db, "mensajes"),
+        orderBy("expiresAt", "desc"),
+        limit(initialLoadLimit)
+      );
     }
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsContainer = document.getElementById("posts");
+      if (!loadMore) postsContainer.innerHTML = "";
+      
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const timeLeft = data.expiresAt - Date.now();
+        
+        if (timeLeft > 0) {
+          const decryptedMessage = decryptMessage(data.texto);
+          const postDiv = document.createElement("div");
+          postDiv.className = "post";
+          postDiv.innerHTML = `
+            <div class="post-header">
+              <span>Edad: ${data.edad || "N/A"}</span>
+              <span>Sexo: ${data.sexo}</span>
+            </div>
+            <div class="post-content">${decryptedMessage}</div>
+            <div class="post-footer">
+              <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
+              <div class="vote-buttons">
+                <button class="like-btn" id="like-${docSnap.id}">
+                  👍 ${data.likes}
+                </button>
+                <button class="dislike-btn" id="dislike-${docSnap.id}">
+                  👎 ${data.dislikes}
+                </button>
+              </div>
+            </div>
+            <div class="comments-section">
+              <div class="comments-header">
+                <h4>Comentarios (${data.commentCount || 0})</h4>
+              </div>
+              <div id="comments-${docSnap.id}" class="comments-container"></div>
+              <div class="comment-form">
+                <textarea 
+                  id="comment-input-${docSnap.id}" 
+                  placeholder="Escribe un comentario..."
+                  maxlength="500"
+                ></textarea>
+                <button onclick="submitComment('${docSnap.id}')">Comentar</button>
+              </div>
+            </div>
+          `;
+
+          postsContainer.appendChild(postDiv);
+          setTimeout(() => postDiv.classList.add('post-visible'), 50);
+          setupVotingButtons(docSnap.id);
+        }
+      });
+
+      lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
+      setupCommentsListeners(snapshot);
+      updateCountdown();
+    });
+
+  } catch (error) {
+    console.error("Error cargando publicaciones:", error);
+  } finally {
+    hideLoader();
+    loading = false;
+  }
+}
+
+function setupCommentsListeners(snapshot) {
+  snapshot.forEach((docSnap) => {
+    const commentsQuery = query(
+      collection(db, "mensajes", docSnap.id, "comentarios"),
+      orderBy("timestamp", "asc")
+    );
+    
+    onSnapshot(commentsQuery, (commentSnapshot) => {
+      const comments = commentSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      renderComments(docSnap.id, comments);
+    });
   });
+}
 
-  updateCountdown();
-});
+// Manejo de scroll
+function handleScroll() {
+  const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+  if (scrollHeight - (scrollTop + clientHeight) < 500) {
+    loadPosts(true);
+  }
+}
 
-// Inicializar
-deleteExpiredMessages();
-updateCharCount();
+// Inicialización
+async function init() {
+  await deleteExpiredMessages();
+  updateCharCount();
+  loadPosts();
+  window.addEventListener('scroll', handleScroll);
+}
+
+init();
