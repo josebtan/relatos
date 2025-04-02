@@ -56,10 +56,6 @@ h1, h2 {
   min-width: 120px;
 }
 
-.form-group-wide {
-  flex: 2;
-}
-
 label {
   display: block;
   margin-bottom: 5px;
@@ -144,6 +140,7 @@ textarea:focus, select:focus, input:focus {
   margin-bottom: 15px;
   font-size: 16px;
   line-height: 1.5;
+  word-break: break-word;
 }
 
 .post-footer {
@@ -204,7 +201,6 @@ textarea:focus, select:focus, input:focus {
   background-color: #f9d7d2;
 }
 
-/* Estilos para comentarios */
 .comments-section {
   margin-top: 20px;
   border-top: 1px solid #eee;
