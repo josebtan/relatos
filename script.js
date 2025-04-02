@@ -221,6 +221,25 @@ async function deleteExpiredMessages() {
   });
 }
 
+// Función mejorada para mostrar el tiempo restante
+function formatTimeRemaining(milliseconds) {
+  const totalMinutes = Math.floor(milliseconds / 60000);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalHours / 24);
+  
+  if (days > 0) {
+    const remainingHours = totalHours % 24;
+    return `${days}d ${remainingHours}h`;
+  }
+  if (totalHours > 0) {
+    const remainingMinutes = totalMinutes % 60;
+    return `${totalHours}h ${remainingMinutes}m`;
+  }
+  
+  const remainingSeconds = Math.floor((milliseconds % 60000) / 1000);
+  return `${totalMinutes}m ${remainingSeconds}s`;
+}
+
 function updateCountdown() {
   document.querySelectorAll(".countdown").forEach((counter) => {
     const expiration = parseInt(counter.getAttribute("data-expiration"));
@@ -233,9 +252,8 @@ function updateCountdown() {
         postElement.remove();
       }
     } else {
-      const minutes = Math.floor((expiration - Date.now()) / 60000);
-      const seconds = Math.floor(((expiration - Date.now()) % 60000) / 1000);
-      counter.textContent = `⏳ ${minutes}m ${seconds}s`;
+      const timeRemaining = expiration - Date.now();
+      counter.textContent = `⏳ ${formatTimeRemaining(timeRemaining)}`;
     }
   });
 
