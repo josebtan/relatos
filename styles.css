@@ -1,4 +1,3 @@
-
 :root {
   --primary-color: #4285f4;
   --success-color: #34a853;
@@ -319,7 +318,6 @@ textarea:focus, select:focus, input:focus {
     margin-bottom: 0;
   }
 }
-
 
 .comments-section {
   margin-top: 20px;
