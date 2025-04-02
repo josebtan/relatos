@@ -1,12 +1,20 @@
-// Importar funciones necesarias de Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { 
-  getFirestore, collection, addDoc, query, orderBy, onSnapshot,
-  updateDoc, doc, increment, serverTimestamp, deleteDoc, getDocs,
-  where, getCountFromServer
+  getFirestore, 
+  collection, 
+  addDoc, 
+  query, 
+  orderBy, 
+  onSnapshot,
+  updateDoc, 
+  doc, 
+  increment, 
+  serverTimestamp, 
+  deleteDoc, 
+  getDocs,
+  getDoc
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
-// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDXTQyWKFT_6SabS5EcSpCDrS5AchxbIxc",
   authDomain: "tempsecret-254d8.firebaseapp.com",
@@ -21,13 +29,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SECRET_KEY = "claveSecreta123";
 
-// Variables de control
 let isUpdating = false;
 const voteQueue = [];
 const messageInput = document.getElementById("message");
 const charCount = document.getElementById("char-count");
 
-// Configurar contador de caracteres
 messageInput.addEventListener("input", updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
@@ -35,7 +41,6 @@ function updateCharCount() {
   charCount.style.color = remaining < 100 ? "#ea4335" : "#666";
 }
 
-// Funciones de cifrado
 function encryptMessage(message) {
   return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
 }
@@ -45,7 +50,6 @@ function decryptMessage(encryptedMessage) {
   return bytes.toString(CryptoJS.enc.Utf8);
 }
 
-// Enviar mensaje
 async function submitPost() {
   const message = messageInput.value.trim();
   const duration = parseInt(document.getElementById("duration").value);
@@ -90,7 +94,6 @@ async function submitPost() {
 
 document.getElementById("submit-button").addEventListener("click", submitPost);
 
-// Manejo de votación mejorado
 async function handleVote(type, postId) {
   if (isUpdating) {
     voteQueue.push({ type, postId });
@@ -106,11 +109,9 @@ async function handleVote(type, postId) {
     
     const updates = {};
     if (previousVote === type) {
-      // Eliminar voto existente
       updates[`${type}s`] = increment(-1);
       delete userVotes[postId];
     } else {
-      // Cambiar o añadir voto
       if (previousVote) {
         updates[`${previousVote}s`] = increment(-1);
       }
@@ -154,7 +155,6 @@ function setupVotingButtons(postId) {
   dislikeButton?.addEventListener("click", () => handleVote("dislike", postId));
 }
 
-// Función para enviar comentarios
 window.submitComment = async function(postId) {
   const commentInput = document.getElementById(`comment-input-${postId}`);
   const commentText = commentInput.value.trim();
@@ -179,7 +179,6 @@ window.submitComment = async function(postId) {
       expiresAt: postSnap.data().expiresAt
     });
     
-    // Actualizar contador de comentarios
     await updateDoc(postRef, {
       commentCount: increment(1)
     });
@@ -191,7 +190,6 @@ window.submitComment = async function(postId) {
   }
 }
 
-// Función para renderizar comentarios
 function renderComments(postId, comments) {
   const commentsContainer = document.getElementById(`comments-${postId}`);
   if (!commentsContainer) return;
@@ -206,7 +204,6 @@ function renderComments(postId, comments) {
   `).join("");
 }
 
-// Borrar mensajes expirados
 async function deleteExpiredMessages() {
   const now = Date.now();
   const querySnapshot = await getDocs(collection(db, "mensajes"));
@@ -218,7 +215,6 @@ async function deleteExpiredMessages() {
   });
 }
 
-// Actualizar cuenta regresiva
 function updateCountdown() {
   document.querySelectorAll(".countdown").forEach((counter) => {
     const expiration = parseInt(counter.getAttribute("data-expiration"));
@@ -240,7 +236,6 @@ function updateCountdown() {
   setTimeout(updateCountdown, 1000);
 }
 
-// Cargar y mostrar publicaciones
 const q = query(collection(db, "mensajes"), orderBy("expiresAt", "desc"));
 onSnapshot(q, (snapshot) => {
   const postsContainer = document.getElementById("posts");
@@ -290,7 +285,6 @@ onSnapshot(q, (snapshot) => {
       postsContainer.appendChild(postDiv);
       setupVotingButtons(docSnap.id);
 
-      // Escuchar comentarios en tiempo real
       const commentsQuery = query(
         collection(db, "mensajes", docSnap.id, "comentarios"),
         orderBy("timestamp", "asc")
@@ -309,6 +303,5 @@ onSnapshot(q, (snapshot) => {
   updateCountdown();
 });
 
-// Inicializar
 deleteExpiredMessages();
 updateCharCount();
