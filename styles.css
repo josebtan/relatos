@@ -204,6 +204,98 @@ textarea:focus, select:focus, input:focus {
   background-color: #f9d7d2;
 }
 
+/* Estilos para comentarios */
+.comments-section {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.comments-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.comments-header h4 {
+  color: var(--dark-color);
+  margin: 0;
+}
+
+.comments-container {
+  margin-bottom: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.comment {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  margin-bottom: 10px;
+  position: relative;
+  margin-left: 30px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.comment:before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 15px;
+  width: 15px;
+  height: 3px;
+  background-color: #ddd;
+}
+
+.comment-content {
+  font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.comment-footer {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+
+.comment-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.comment-form textarea {
+  flex: 1;
+  padding: 10px;
+  min-height: 60px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: var(--border-radius);
+}
+
+.comment-form button {
+  padding: 0 15px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  align-self: flex-end;
+  height: 40px;
+  margin-bottom: 5px;
+}
+
+.comment-form button:hover {
+  background: #357abd;
+}
+
 @media (max-width: 600px) {
   .form-fields {
     flex-direction: column;
@@ -216,5 +308,17 @@ textarea:focus, select:focus, input:focus {
   
   .form-group {
     min-width: 100%;
+  }
+  
+  .comment-form {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .comment-form button {
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    margin-bottom: 0;
   }
 }
