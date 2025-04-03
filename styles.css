@@ -3,9 +3,9 @@
 
 /* Variables globales */
 :root {
-  --primary-color: #6a11cb;
-  --secondary-color: #ff7e5f;
-  --background-color: #f5f5f5;
+  --primary-color: #007bff;
+  --secondary-color: #ff5722;
+  --background-color: #ffffff;
   --text-color: #333;
   --border-radius: 10px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -44,7 +44,7 @@ textarea, select, input {
 
 textarea:focus, select:focus, input:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 8px rgba(106, 17, 203, 0.5);
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
 }
 
 /* Botón de publicar */
@@ -61,8 +61,8 @@ button {
 }
 
 button:hover {
-  background: #5a0fb8;
-  box-shadow: 0 4px 8px rgba(106, 17, 203, 0.3);
+  background: #0056b3;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
 }
 
 /* Sección de publicaciones */
@@ -82,36 +82,30 @@ button:hover {
   transition: var(--transition);
   opacity: 0;
   transform: translateY(20px);
-  color: white;
+  background: white;
+  color: var(--text-color);
   font-size: 16px;
+  border-left: 5px solid var(--primary-color); /* Bordes coloridos */
 }
 
-/* Alternar colores para publicaciones */
-.post:nth-child(odd) {
-  background: linear-gradient(to right, #ff7e5f, #feb47b);  /* Tonos cálidos */
+/* Alternar colores en encabezados de publicaciones */
+.post:nth-child(odd) .post-header {
+  background-color: var(--primary-color);
+  color: white;
 }
 
-.post:nth-child(even) {
-  background: linear-gradient(to right, #6a11cb, #2575fc);  /* Tonos fríos */
-}
-
-.post-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.post:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.25);
+.post:nth-child(even) .post-header {
+  background-color: var(--secondary-color);
+  color: white;
 }
 
 /* Cabecera de la publicación */
 .post-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  opacity: 0.9;
-  font-weight: 600;
+  padding: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  border-top-left-radius: var(--border-radius);
+  border-top-right-radius: var(--border-radius);
 }
 
 /* Contenido de la publicación */
@@ -120,7 +114,7 @@ button:hover {
   font-weight: 400;
   margin: 10px 0;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: var(--border-radius);
 }
 
@@ -170,12 +164,12 @@ button:hover {
 .comments-section {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* Comentarios */
 .comment {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.05);
   padding: 10px;
   border-radius: var(--border-radius);
   margin-top: 5px;
