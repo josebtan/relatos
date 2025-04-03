@@ -3,12 +3,12 @@
 
 /* Variables globales */
 :root {
-  --primary-color: #4285f4;      /* Para encabezados y acentos */
-  --success-color: #34a853;      /* Para botones y acentos */
-  --danger-color: #ea4335;       /* Para advertencias o contador */
+  --primary-color: #4285f4;      /* Color para acentos y franja en encabezados */
+  --success-color: #34a853;
+  --danger-color: #ea4335;
   --light-color: #ffffff;        /* Fondo principal: blanco */
   --dark-color: #333333;         /* Texto principal */
-  --accent-color: #fbbc05;        /* Acento opcional */
+  --accent-color: #fbbc05;
   --border-radius: 10px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease-in-out;
@@ -143,6 +143,7 @@ textarea:focus, select:focus, input:focus {
   transform: translateY(20px);
   border: 1px solid #eee;
   color: var(--dark-color);
+  font-size: 16px;
 }
 
 .post-visible {
@@ -155,7 +156,7 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con colores */
+/* Encabezado de la publicación con franja inferior */
 .post-header {
   display: flex;
   justify-content: space-between;
@@ -163,6 +164,8 @@ textarea:focus, select:focus, input:focus {
   font-size: 14px;
   font-weight: 600;
   color: var(--primary-color);
+  border-bottom: 3px solid var(--primary-color);  /* Franja de color */
+  padding-bottom: 5px;
 }
 
 .post-content {
