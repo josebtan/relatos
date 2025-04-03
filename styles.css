@@ -3,7 +3,7 @@
 
 /* Variables globales */
 :root {
-  --primary-color: #4285f4;      /* Color para acentos y franja en encabezados */
+  --primary-color: #4285f4;      /* Color para acentos y encabezados */
   --success-color: #34a853;
   --danger-color: #ea4335;
   --light-color: #ffffff;        /* Fondo principal: blanco */
@@ -132,7 +132,7 @@ textarea:focus, select:focus, input:focus {
   margin-top: 20px;
 }
 
-/* Publicación: fondo blanco, con acentos en encabezados */
+/* Publicación: fondo blanco, con encabezado destacado */
 .post {
   background: var(--light-color);
   padding: 20px;
@@ -156,18 +156,18 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con franja inferior */
+/* Encabezado de la publicación: fondo y franja gruesa */
 .post-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 8px 12px;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
-  color: var(--primary-color);
-  border-bottom: 3px solid var(--primary-color);  /* Franja de color */
-  padding-bottom: 5px;
+  margin: -20px -20px 10px -20px;
 }
 
+/* Contenido y pie de la publicación */
 .post-content {
   font-size: 16px;
   line-height: 1.5;
