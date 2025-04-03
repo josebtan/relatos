@@ -308,22 +308,19 @@ async function loadPosts(loadMore = false) {
           const postDiv = document.createElement("div");
           postDiv.className = "post";
           postDiv.innerHTML = `
-            <div class="post-header">
-              <span>Edad: ${data.edad || "N/A"}</span>
-              <span>Sexo: ${data.sexo}</span>
-            </div>
-            <div class="post-content">${decryptedMessage}</div>
-            <div class="post-footer">
-              <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
-              <div class="vote-buttons">
-                <button class="like-btn" id="like-${docSnap.id}">
-                  👍 ${data.likes}
-                </button>
-                <button class="dislike-btn" id="dislike-${docSnap.id}">
-                  👎 ${data.dislikes}
-                </button>
-              </div>
-            </div>
+  <div class="post-header">
+    <span class="post-id">ID: ${docSnap.id}</span>
+    <span>Edad: ${data.edad || "N/A"}</span>
+    <span>Sexo: ${data.sexo}</span>
+  </div>
+  <div class="post-content">${decryptedMessage}</div>
+  <div class="post-footer">
+    <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
+    <div class="vote-buttons">
+      <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
+      <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
+    </div>
+  </div>
             <div class="comments-section">
               <div class="comments-header">
                 <h4>Comentarios (${data.commentCount || 0})</h4>
