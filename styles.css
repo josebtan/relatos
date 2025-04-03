@@ -156,21 +156,27 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con franja de color */
+/* Encabezado de la publicación */
 .post-header {
   background-color: var(--primary-color);
   color: white;
-  padding: 8px 12px;
+  padding: 12px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
-  margin: -20px -20px 10px -20px;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.post-header span + span {
-  margin-left: 15px; /* Espaciado entre Edad y Sexo */
+.post-header span {
+  margin-right: 15px;
+}
+
+/* Destacar la ID con algo de énfasis */
+.post-id {
+  font-style: italic;
+  opacity: 0.8;
 }
 
 /* Contenido y pie de la publicación */
