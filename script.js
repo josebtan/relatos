@@ -22,7 +22,7 @@
         <div class="form-group">
           <label for="gender">Sexo:</label>
           <select id="gender">
-            <option value="none">Prefiero no decir</option>
+            <option value="none">Indefinido</option>
             <option value="masculino">Masculino</option>
             <option value="femenino">Femenino</option>
           </select>
