@@ -67,7 +67,7 @@ const loadingSpinner = document.getElementById("loading-spinner");
 messageInput.addEventListener("input", updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
-  charCount.textContent = `${remaining} caracteres restantes`;
+  charCount.textContent = ${remaining} caracteres restantes;
   charCount.style.color = remaining < 100 ? "#ea4335" : "#666";
 }
 
@@ -148,9 +148,9 @@ function formatTimeRemaining(milliseconds) {
   const days = Math.floor(totalHours / 24);
   
   if (days > 0) {
-  const remainingHours = totalHours % 24;
-  return `${days}d ${remainingHours}h`;  // ← Backticks agregados
-}
+    const remainingHours = totalHours % 24;
+    return ${days}d ${remainingHours}h;
+  }
   if (totalHours > 0) {
     const remainingMinutes = totalMinutes % 60;
     return ${totalHours}h ${remainingMinutes}m;
