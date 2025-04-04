@@ -46,12 +46,12 @@ const messageInput = document.getElementById('message');
 const charCount = document.getElementById('char-count');
 const loadingSpinner = document.getElementById('loading-spinner');
 
-// Actualizar contador de caracteres
+// Actualizar contador de caracteres (Corrección 1: Sintaxis CSS variable)
 messageInput.addEventListener('input', updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
   charCount.textContent = `${remaining} caracteres restantes`;
-  charCount.style.color = remaining < 100 ? var(--danger-color) : 'inherit';
+  charCount.style.color = remaining < 100 ? 'var(--danger-color)' : 'inherit';
 }
 
 // Funciones de cifrado
@@ -94,7 +94,7 @@ async function submitPost() {
 
     messageInput.value = '';
     updateCharCount();
-    loadPosts(); // Recargar publicaciones
+    loadPosts();
   } catch (error) {
     console.error('Error al publicar:', error);
     alert('Error al publicar. Intenta nuevamente.');
@@ -115,9 +115,8 @@ async function cleanExpiredPosts() {
   );
   
   const snapshot = await getDocs(q);
-  snapshot.forEach(async (doc) => {
-    await deleteDoc(doc.ref);
-  });
+  const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
 }
 
 // Formatear tiempo restante
@@ -126,7 +125,6 @@ function formatTimeRemaining(milliseconds) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  
   return `${hours}h ${minutes}m ${seconds}s`;
 }
 
@@ -135,13 +133,10 @@ function updateTimers() {
   document.querySelectorAll('.countdown').forEach(timer => {
     const expiration = parseInt(timer.dataset.expiration);
     const remaining = expiration - Date.now();
-    
-    if (remaining > 0) {
-      timer.textContent = `⏳ ${formatTimeRemaining(remaining)}`;
-    } else {
-      timer.textContent = '🕒 Expirado';
-      timer.closest('.post').style.opacity = '0.5';
-    }
+    timer.textContent = remaining > 0 
+      ? `⏳ ${formatTimeRemaining(remaining)}` 
+      : '🕒 Expirado';
+    if (remaining <= 0) timer.closest('.post').style.opacity = '0.5';
   });
 }
 
@@ -168,7 +163,7 @@ async function handleVote(postId, type) {
   }
 }
 
-// Cargar publicaciones
+// Cargar publicaciones (Corrección 2: Query construction)
 async function loadPosts(loadMore = false) {
   if (loading || !hasMore) return;
   loading = true;
@@ -176,20 +171,20 @@ async function loadPosts(loadMore = false) {
 
   try {
     const postsContainer = document.getElementById('posts');
-    const q = query(
-      collection(db, 'mensajes'),
+    const queryConstraints = [
       orderBy('expiresAt', 'desc'),
-      loadMore && lastVisible ? startAfter(lastVisible) : null,
       limit(loadMore ? loadMoreLimit : initialLoadLimit)
-    );
+    ];
+    
+    if (loadMore && lastVisible) {
+      queryConstraints.push(startAfter(lastVisible));
+    }
 
+    const q = query(collection(db, 'mensajes'), ...queryConstraints);
     const snapshot = await getDocs(q);
+
     if (snapshot.empty && !loadMore) {
-      postsContainer.innerHTML = `
-        <div class="no-posts">
-          <p>¡Sé el primero en compartir tu relato!</p>
-        </div>
-      `;
+      postsContainer.innerHTML = `<div class="no-posts"><p>¡Sé el primero en compartir tu relato!</p></div>`;
       return;
     }
 
@@ -211,7 +206,7 @@ async function loadPosts(loadMore = false) {
   }
 }
 
-// Crear elemento de publicación
+// Crear elemento de publicación (Corrección 3: Event listeners)
 function createPostElement(id, data) {
   const post = document.createElement('div');
   post.className = 'post';
@@ -225,20 +220,20 @@ function createPostElement(id, data) {
     <div class="post-footer">
       <span class="countdown" data-expiration="${data.expiresAt}"></span>
       <div class="vote-buttons">
-        <button id="like-${id}" onclick="handleVote('${id}', 'like')">
-          👍 ${data.likes}
-        </button>
-        <button id="dislike-${id}" onclick="handleVote('${id}', 'dislike')">
-          👎 ${data.dislikes}
-        </button>
+        <button id="like-${id}">👍 ${data.likes}</button>
+        <button id="dislike-${id}">👎 ${data.dislikes}</button>
       </div>
     </div>
     <div class="comments-section" id="comments-${id}"></div>
   `;
 
   // Configurar votación
+  const voteButtons = post.querySelectorAll('button');
+  voteButtons[0].addEventListener('click', () => handleVote(id, 'like'));
+  voteButtons[1].addEventListener('click', () => handleVote(id, 'dislike'));
+  
   if (localStorage.getItem(`vote_${id}`)) {
-    post.querySelectorAll('button').forEach(btn => btn.disabled = true);
+    voteButtons.forEach(btn => btn.disabled = true);
   }
 
   return post;
@@ -247,26 +242,23 @@ function createPostElement(id, data) {
 // Sistema de comentarios
 async function setupComments() {
   const posts = await getDocs(collection(db, 'mensajes'));
-  posts.forEach(async postDoc => {
+  posts.forEach(postDoc => {
     const commentsRef = collection(db, 'mensajes', postDoc.id, 'comentarios');
     const commentsQuery = query(commentsRef, orderBy('timestamp', 'asc'));
     
     onSnapshot(commentsQuery, (snapshot) => {
       const commentsContainer = document.getElementById(`comments-${postDoc.id}`);
-      commentsContainer.innerHTML = '';
-      
-      snapshot.forEach(commentDoc => {
+      commentsContainer.innerHTML = snapshot.docs.map(commentDoc => {
         const comment = commentDoc.data();
-        const commentElement = document.createElement('div');
-        commentElement.className = 'comment';
-        commentElement.innerHTML = `
-          <div class="comment-content">${decryptMessage(comment.texto)}</div>
-          <div class="comment-footer">
-            ${comment.timestamp?.toDate().toLocaleString() || 'Ahora'}
+        return `
+          <div class="comment">
+            <div class="comment-content">${decryptMessage(comment.texto)}</div>
+            <div class="comment-footer">
+              ${comment.timestamp?.toDate().toLocaleString() || 'Ahora'}
+            </div>
           </div>
         `;
-        commentsContainer.appendChild(commentElement);
-      });
+      }).join('');
     });
   });
 }
@@ -283,7 +275,10 @@ window.addEventListener('scroll', () => {
 async function initialize() {
   await cleanExpiredPosts();
   loadPosts();
-  setInterval(cleanExpiredPosts, 60000); // Limpiar cada minuto
+  setInterval(() => {
+    cleanExpiredPosts();
+    updateTimers();
+  }, 60000);
   setInterval(updateTimers, 1000);
 }
 
