@@ -3,11 +3,11 @@
 
 /* Variables globales para modo claro */
 :root {
-  --primary-color: #4285f4;
+  --primary-color: #4285f4;      /* Color para acentos y encabezados */
   --success-color: #34a853;
   --danger-color: #ea4335;
-  --light-color: #ffffff;
-  --dark-color: #333333;
+  --light-color: #ffffff;        /* Fondo principal: blanco */
+  --dark-color: #333333;         /* Texto principal */
   --accent-color: #fbbc05;
   --border-radius: 10px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -16,11 +16,11 @@
 
 /* Variables para modo oscuro */
 body.dark-mode {
-  --primary-color: #8ab4f8;
+  --primary-color: #8ab4f8;   /* Acento para encabezados */
   --success-color: #81c995;
   --danger-color: #ea4335;
-  --light-color: #121212;
-  --dark-color: #e8eaed;
+  --light-color: #121212;     /* Fondo principal: negro */
+  --dark-color: #e8eaed;      /* Texto claro */
   --accent-color: #fbbc05;
 }
 
@@ -44,7 +44,7 @@ body {
   margin: 20px auto;
 }
 
-/* Botón para alternar modo oscuro (si está implementado en el HTML) */
+/* Botón para alternar modo oscuro */
 .dark-mode-toggle {
   position: fixed;
   top: 20px;
@@ -189,7 +189,7 @@ textarea:focus, select:focus, input:focus {
 .post-header {
   background-color: var(--primary-color);
   color: white;
-  padding: 16px;  /* Aumenté el padding para hacerla más gruesa */
+  padding: 16px;  /* Mayor padding para una franja más gruesa */
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
@@ -200,7 +200,7 @@ textarea:focus, select:focus, input:focus {
 }
 
 .post-header span {
-  margin-right: 15px; /* Espaciado entre elementos */
+  margin-right: 15px; /* Espaciado entre elementos (ID, Edad y Sexo) */
 }
 
 /* Destacar la ID */
@@ -336,6 +336,15 @@ textarea:focus, select:focus, input:focus {
   margin-left: 30px;
   border-left: 3px solid var(--primary-color);
   color: var(--dark-color);
+}
+
+/* Ajustes para comentarios en modo oscuro */
+body.dark-mode .comment {
+  background: #2a2a2a;
+  color: #e8eaed;
+}
+body.dark-mode .comment:before {
+  background-color: #555;
 }
 
 .comment:before {
