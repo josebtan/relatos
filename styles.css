@@ -1,413 +1,204 @@
-/* Importar fuente Poppins desde Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
-/* Variables globales para modo claro */
-:root {
-  --primary-color: #4285f4;      /* Color para acentos y encabezados */
-  --success-color: #34a853;
-  --danger-color: #ea4335;
-  --light-color: #ffffff;        /* Fondo principal: blanco */
-  --dark-color: #333333;         /* Texto principal */
-  --accent-color: #fbbc05;
-  --border-radius: 10px;
-  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease-in-out;
-}
-
-/* Variables para modo oscuro */
-body.dark-mode {
-  --primary-color: #8ab4f8;
-  --success-color: #81c995;
-  --danger-color: #ea4335;
-  --light-color: #121212;
-  --dark-color: #e8eaed; /* Este se usa en textos generales, pero ajustaremos los comentarios */
-  --accent-color: #fbbc05;
-}
-
-/* Reset y estilos generales */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* Estilos generales */
 body {
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--light-color);
-  color: var(--dark-color);
-  padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    transition: background 0.3s, color 0.3s;
 }
 
+/* Contenedor principal */
 .container {
-  width: 90%;
-  max-width: 600px;
-  margin: 20px auto;
+    max-width: 600px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Botón para alternar modo oscuro (si se usa en el HTML) */
-.dark-mode-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 8px 12px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
-  z-index: 1000;
+/* Botón de Modo Oscuro */
+#dark-mode-toggle {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: #222;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
 }
 
-.dark-mode-toggle:hover {
-  background: #3367d6;
+#dark-mode-toggle:hover {
+    background: #444;
 }
 
-/* Títulos principales */
-h1, h2 {
-  text-align: center;
-  margin-bottom: 20px;
-  font-weight: 600;
-}
-
-h1 {
-  color: var(--primary-color);
-}
-
-h2 {
-  color: var(--accent-color);
-}
-
-/* Formulario de publicación */
-.post-form {
-  background: var(--light-color);
-  padding: 25px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  margin-bottom: 30px;
-  border: 1px solid #ddd;
-}
-
-.form-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 15px;
-}
-
-.form-group {
-  flex: 1;
-  min-width: 120px;
-}
-
-label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: var(--primary-color);
-}
-
-textarea, select, input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: var(--border-radius);
-  font-size: 16px;
-  transition: var(--transition);
-}
-
+/* Área de texto para escribir mensajes */
 textarea {
-  min-height: 120px;
-  resize: none; /* Deshabilita el redimensionamiento */
+    width: 100%;
+    height: 100px;
+    resize: none;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: border 0.3s;
 }
 
-textarea:focus, select:focus, input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+textarea:focus {
+    border-color: #007bff;
+    outline: none;
 }
 
-.char-count {
-  text-align: right;
-  font-size: 14px;
-  color: var(--dark-color);
-  margin-top: 5px;
+/* Contador de caracteres */
+#char-count {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
 }
 
-/* Botón de publicar */
-.submit-btn {
-  width: 100%;
-  padding: 12px;
-  background-color: var(--success-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
+/* Select de tiempo de expiración */
+select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
 }
 
-.submit-btn:hover {
-  background-color: #2d9248;
-  transform: translateY(-2px);
+/* Botón de publicación */
+button {
+    cursor: pointer;
+    padding: 10px;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 5px;
+    margin-top: 10px;
+    width: 100%;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+button:disabled {
+    background: #999;
+    cursor: not-allowed;
 }
 
 /* Publicaciones */
-.posts-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 20px;
+#posts {
+    margin-top: 20px;
 }
 
-/* Publicación: fondo blanco, con encabezado destacado */
 .post {
-  background: var(--light-color);
-  padding: 20px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  transition: var(--transition);
-  opacity: 0;
-  transform: translateY(20px);
-  border: 1px solid #eee;
-  color: var(--dark-color);
-  font-size: 16px;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
-.post-visible {
-  opacity: 1;
-  transform: translateY(0);
+.post p {
+    font-size: 14px;
+    color: #333;
+    margin: 0 0 10px 0;
 }
 
-.post:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+.post button {
+    background: #28a745;
+    width: auto;
+    padding: 5px 10px;
+    font-size: 14px;
+    margin-right: 5px;
 }
 
-/* Encabezado de la publicación con franja de color gruesa */
-.post-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 16px;  /* Más padding para franja más gruesa */
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
-  font-size: 14px;
-  font-weight: 600;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin: -20px -20px 10px -20px;
+.post button:hover {
+    background: #218838;
 }
 
-.post-header span {
-  margin-right: 15px; /* Espaciado entre elementos (ID, Edad, Sexo) */
+/* Modo oscuro */
+.dark-mode {
+    background-color: #121212;
+    color: white;
 }
 
-/* Destacar la ID */
-.post-id {
-  font-style: italic;
-  opacity: 0.8;
+.dark-mode .container {
+    background-color: #1e1e1e;
+    color: white;
 }
 
-/* Contenido y pie de la publicación */
-.post-content {
-  font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 15px;
-  word-break: break-word;
+.dark-mode .post {
+    background: #252525;
+    color: white;
 }
 
-.post-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 15px;
+.dark-mode textarea,
+.dark-mode select {
+    background: #333;
+    color: white;
+    border: 1px solid #666;
 }
 
-/* Contador de tiempo */
-.countdown {
-  font-size: 14px;
-  color: var(--danger-color);
-  font-weight: 500;
+.dark-mode button {
+    background: #444;
+    color: white;
 }
 
-/* Botones de votación */
-.vote-buttons {
-  display: flex;
-  gap: 10px;
+.dark-mode button:hover {
+    background: #666;
 }
 
-.like-btn, .dislike-btn {
-  padding: 8px 15px;
-  border: none;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: var(--transition);
-  color: var(--dark-color);
+/* Carga de más posts */
+#load-more {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: white;
+    border-radius: 5px;
+    margin-top: 10px;
+    text-align: center;
+    cursor: pointer;
 }
 
-.like-btn {
-  background-color: #e8f0fe;
+#load-more:hover {
+    background: #555;
 }
 
-.dislike-btn {
-  background-color: #fce8e6;
+/* Ocultar elementos */
+.hidden {
+    display: none;
 }
 
-.like-btn.active-like {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.dislike-btn.active-dislike {
-  background-color: var(--danger-color);
-  color: white;
-}
-
-.like-btn:hover:not(.active-like) {
-  background-color: #d2e3fc;
-}
-
-.dislike-btn:hover:not(.active-dislike) {
-  background-color: #f9d7d2;
-}
-
-/* Spinner de carga */
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
-  display: none;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Mensaje cuando no hay publicaciones */
-.no-posts-message {
-  color: #ccc;
-  font-size: 1.2em;
-  text-align: center;
-  margin-top: 100px;
-  font-style: italic;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Sección de comentarios */
-.comments-section {
-  margin-top: 20px;
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-}
-
-.comments-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.comments-header h4 {
-  color: var(--primary-color);
-  margin: 0;
-}
-
-.comments-container {
-  margin-bottom: 15px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.comment {
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: var(--border-radius);
-  margin-bottom: 10px;
-  position: relative;
-  margin-left: 30px;
-  border-left: 3px solid var(--primary-color);
-  color: var(--dark-color);
-}
-
-.comment:before {
-  content: "";
-  position: absolute;
-  left: -20px;
-  top: 15px;
-  width: 15px;
-  height: 3px;
-  background-color: #ddd;
-}
-
-.comment-content {
-  font-size: 14px;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.comment-footer {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  justify-content: space-between;
-}
-
-.comment-form {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.comment-form textarea {
-  flex: 1;
-  padding: 10px;
-  min-height: 60px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius);
-}
-
-.comment-form button {
-  padding: 0 15px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
-  align-self: flex-end;
-  height: 40px;
-  margin-bottom: 5px;
-}
-
-.comment-form button:hover {
-  background: #357abd;
-}
-
-/* Ajustes para comentarios en modo oscuro */
-body.dark-mode .comment {
-  background: #2a2a2a;
-  color: #cccccc;  /* Texto un poco más oscuro para contraste */
-}
-body.dark-mode .comment:before {
-  background-color: #555;
-}
-
-/* Responsive */
+/* Diseño adaptable */
 @media (max-width: 600px) {
-  .form-fields {
-    flex-direction: column;
-    gap: 15px;
-  }
+    .container {
+        width: 90%;
+        padding: 15px;
+    }
+
+    #dark-mode-toggle {
+        top: 10px;
+        right: 10px;
+        padding: 8px;
+    }
+
+    textarea {
+        height: 80px;
+    }
+
+    .post p {
+        font-size: 13px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 8px;
+    }
 }
