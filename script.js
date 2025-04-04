@@ -1,3 +1,16 @@
+// Alternar modo oscuro
+const darkModeToggle = document.getElementById("dark-mode-toggle");
+if (darkModeToggle) {
+  darkModeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    if (document.body.classList.contains("dark-mode")) {
+      darkModeToggle.textContent = "Modo Claro";
+    } else {
+      darkModeToggle.textContent = "Modo Oscuro";
+    }
+  });
+}
+
 // Importar funciones necesarias de Firebase
 import { 
   initializeApp 
@@ -148,7 +161,7 @@ function formatTimeRemaining(milliseconds) {
 }
 
 /**
- * Actualiza el contador y elimina mensajes expirados de la interfaz y Firebase.
+ * Actualiza el contador de tiempo y elimina mensajes expirados de la interfaz y Firebase.
  */
 function updateCountdown() {
   document.querySelectorAll(".countdown").forEach((counter) => {
@@ -169,7 +182,7 @@ function updateCountdown() {
 }
 
 /**
- * Manejo de votos: deshabilita los botones luego de votar y guarda en localStorage.
+ * Manejo de votos: deshabilita los botones luego de votar y guarda el voto en localStorage.
  */
 async function handleVote(type, postId) {
   const voteKey = `vote-${postId}`;
@@ -199,8 +212,8 @@ async function handleVote(type, postId) {
 }
 
 /**
- * Configura los botones de voto para cada publicación.
- * Al cargar se deshabilitan si ya se votó.
+ * Configura los botones de votación para cada publicación.
+ * Si ya se votó, se deshabilitan al cargar.
  */
 function setupVotingButtons(postId) {
   const voteKey = `vote-${postId}`;
@@ -284,7 +297,7 @@ function setupCommentsListeners(snapshot) {
 
 /**
  * Manejo de carga de publicaciones con paginación y spinner.
- * Si no hay publicaciones, muestra un mensaje en letras gris claro y un botón para publicar.
+ * Si no hay publicaciones, se muestra un mensaje invitando a publicar.
  */
 async function loadPosts(loadMore = false) {
   if (loading || !hasMore) return;
@@ -403,15 +416,5 @@ async function init() {
   loadPosts();
   window.addEventListener('scroll', handleScroll);
 }
-const darkModeToggle = document.getElementById("dark-mode-toggle");
-if(darkModeToggle) {
-  darkModeToggle.addEventListener("click", () => {
-    document.body.classList.toggle("dark-mode");
-    if (document.body.classList.contains("dark-mode")) {
-      darkModeToggle.textContent = "Modo Claro";
-    } else {
-      darkModeToggle.textContent = "Modo Oscuro";
-    }
-  });
-}
+
 init();
