@@ -49,14 +49,12 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SECRET_KEY = "claveSecreta123";
 
-// Variables de control para paginación y votación
-let isUpdating = false;
+// Variables de control
 let lastVisible = null;
 let loading = false;
 let hasMore = true;
 const initialLoadLimit = 15;
 const loadMoreLimit = 8;
-const voteQueue = [];
 
 // Elementos del DOM
 const messageInput = document.getElementById("message");
@@ -67,11 +65,11 @@ const loadingSpinner = document.getElementById("loading-spinner");
 messageInput.addEventListener("input", updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
-  charCount.textContent = ${remaining} caracteres restantes;
+  charCount.textContent = `${remaining} caracteres restantes`;
   charCount.style.color = remaining < 100 ? "#ea4335" : "#666";
 }
 
-// Funciones de cifrado/descifrado (usando CryptoJS)
+// Funciones de cifrado/descifrado
 function encryptMessage(message) {
   return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
 }
@@ -93,19 +91,16 @@ async function submitPost() {
     return;
   }
 
-  const encryptedMessage = encryptMessage(message);
-  const expirationTime = Date.now() + duration * 60000;
-
   try {
     const submitBtn = document.getElementById("submit-button");
     submitBtn.disabled = true;
     submitBtn.textContent = "Publicando...";
     
     await addDoc(collection(db, "mensajes"), {
-      texto: encryptedMessage,
+      texto: encryptMessage(message),
       edad: age || null,
       sexo: gender,
-      expiresAt: expirationTime,
+      expiresAt: Date.now() + duration * 60000,
       likes: 0,
       dislikes: 0,
       timestamp: serverTimestamp(),
@@ -114,6 +109,7 @@ async function submitPost() {
     
     messageInput.value = "";
     updateCharCount();
+    loadPosts(); // Recargar publicaciones después de enviar una nueva
   } catch (error) {
     console.error("Error al guardar:", error);
     alert("Ocurrió un error al publicar. Por favor intenta nuevamente.");
@@ -126,43 +122,26 @@ async function submitPost() {
 
 document.getElementById("submit-button").addEventListener("click", submitPost);
 
-/**
- * Elimina de Firebase los mensajes expirados.
- */
+// Eliminar mensajes expirados
 async function deleteExpiredMessages() {
   const now = Date.now();
   const expiredQuery = query(collection(db, "mensajes"), where("expiresAt", "<", now));
   const snapshot = await getDocs(expiredQuery);
-  snapshot.forEach(async (docSnap) => {
-    await deleteDoc(doc(db, "mensajes", docSnap.id));
-    console.log("Mensaje expirado eliminado:", docSnap.id);
-  });
+  const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+  await Promise.all(deletePromises);
 }
 
-/**
- * Formatea el tiempo restante.
- */
+// Formatear tiempo restante
 function formatTimeRemaining(milliseconds) {
-  const totalMinutes = Math.floor(milliseconds / 60000);
-  const totalHours = Math.floor(totalMinutes / 60);
-  const days = Math.floor(totalHours / 24);
+  const totalSeconds = Math.floor(milliseconds / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   
-  if (days > 0) {
-    const remainingHours = totalHours % 24;
-    return ${days}d ${remainingHours}h;
-  }
-  if (totalHours > 0) {
-    const remainingMinutes = totalMinutes % 60;
-    return ${totalHours}h ${remainingMinutes}m;
-  }
-  
-  const remainingSeconds = Math.floor((milliseconds % 60000) / 1000);
-  return ${totalMinutes}m ${remainingSeconds}s;
+  return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-/**
- * Actualiza el contador de tiempo y elimina mensajes expirados de la interfaz y Firebase.
- */
+// Actualizar contador de tiempo
 function updateCountdown() {
   document.querySelectorAll(".countdown").forEach((counter) => {
     const expiration = parseInt(counter.getAttribute("data-expiration"));
@@ -170,7 +149,7 @@ function updateCountdown() {
     const timeLeft = expiration - Date.now();
 
     if (timeLeft > 0) {
-      counter.textContent = ⏳ ${formatTimeRemaining(timeLeft)};
+      counter.textContent = `⏳ ${formatTimeRemaining(timeLeft)}`;
     } else {
       counter.textContent = "Expirado";
       const postElement = counter.closest(".post");
@@ -178,14 +157,11 @@ function updateCountdown() {
       deleteDoc(doc(db, "mensajes", postId)).catch(console.error);
     }
   });
-  setTimeout(updateCountdown, 1000);
 }
 
-/**
- * Manejo de votos: deshabilita los botones luego de votar y guarda el voto en localStorage.
- */
+// Manejo de votos
 async function handleVote(type, postId) {
-  const voteKey = vote-${postId};
+  const voteKey = `vote-${postId}`;
   const previousVote = localStorage.getItem(voteKey);
   if (previousVote) {
     alert("Ya has votado en esta publicación.");
@@ -193,112 +169,21 @@ async function handleVote(type, postId) {
   }
 
   const postRef = doc(db, "mensajes", postId);
-  let updates = {};
-  if (type === "like") {
-    updates.likes = increment(1);
-  } else if (type === "dislike") {
-    updates.dislikes = increment(1);
-  }
-
+  
   try {
-    await updateDoc(postRef, updates);
-    localStorage.setItem(voteKey, type);
-    // Deshabilitar los botones de este post
-    document.getElementById(like-${postId}).disabled = true;
-    document.getElementById(dislike-${postId}).disabled = true;
+    await updateDoc(postRef, {
+      [type === "like" ? "likes" : "dislikes"]: increment(1)
+    });
+    
+    localStorage.setItem(voteKey, "voted");
+    document.getElementById(`like-${postId}`).disabled = true;
+    document.getElementById(`dislike-${postId}`).disabled = true;
   } catch (error) {
     console.error("Error al actualizar voto:", error);
   }
 }
 
-/**
- * Configura los botones de votación para cada publicación.
- * Si ya se votó, se deshabilitan al cargar.
- */
-function setupVotingButtons(postId) {
-  const voteKey = vote-${postId};
-  const previousVote = localStorage.getItem(voteKey);
-  if (previousVote) {
-    document.getElementById(like-${postId}).disabled = true;
-    document.getElementById(dislike-${postId}).disabled = true;
-  }
-  
-  document.getElementById(like-${postId}).addEventListener("click", () => handleVote("like", postId));
-  document.getElementById(dislike-${postId}).addEventListener("click", () => handleVote("dislike", postId));
-}
-
-/**
- * Sistema de comentarios.
- */
-window.submitComment = async function(postId) {
-  const commentInput = document.getElementById(comment-input-${postId});
-  const commentText = commentInput.value.trim();
-  
-  if (commentText === "") {
-    alert("No puedes enviar un comentario vacío.");
-    return;
-  }
-
-  try {
-    const encryptedComment = encryptMessage(commentText);
-    const postRef = doc(db, "mensajes", postId);
-    const postSnap = await getDoc(postRef);
-    
-    if (!postSnap.exists()) {
-      throw new Error("El post no existe");
-    }
-    
-    await addDoc(collection(db, "mensajes", postId, "comentarios"), {
-      texto: encryptedComment,
-      timestamp: serverTimestamp()
-    });
-    
-    await updateDoc(postRef, {
-      commentCount: increment(1)
-    });
-    
-    commentInput.value = "";
-  } catch (error) {
-    console.error("Error al comentar:", error);
-    alert("Ocurrió un error al publicar el comentario");
-  }
-};
-
-function renderComments(postId, comments) {
-  const commentsContainer = document.getElementById(comments-${postId});
-  if (!commentsContainer) return;
-  
-  commentsContainer.innerHTML = comments.map(comment => 
-    <div class="comment">
-      <div class="comment-content">${decryptMessage(comment.texto)}</div>
-      <div class="comment-footer">
-        <small>${comment.timestamp?.toDate().toLocaleString() || 'Ahora'}</small>
-      </div>
-    </div>
-  ).join("");
-}
-
-function setupCommentsListeners(snapshot) {
-  snapshot.forEach((docSnap) => {
-    const commentsQuery = query(
-      collection(db, "mensajes", docSnap.id, "comentarios"),
-      orderBy("timestamp", "asc")
-    );
-    
-    onSnapshot(commentsQuery, (commentSnapshot) => {
-      const comments = commentSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      renderComments(docSnap.id, comments);
-    });
-  });
-}
-
-/**
- * Manejo de carga de publicaciones con paginación y spinner.
- * Si no hay publicaciones, se muestra un mensaje invitando a publicar.
- */
+// Cargar publicaciones (versión corregida)
 async function loadPosts(loadMore = false) {
   if (loading || !hasMore) return;
   
@@ -306,115 +191,136 @@ async function loadPosts(loadMore = false) {
   loading = true;
   
   try {
-    let q;
-    if (loadMore && lastVisible) {
-      q = query(
-        collection(db, "mensajes"),
-        orderBy("expiresAt", "desc"),
-        startAfter(lastVisible),
-        limit(loadMoreLimit)
-      );
-    } else {
-      q = query(
-        collection(db, "mensajes"),
-        orderBy("expiresAt", "desc"),
-        limit(initialLoadLimit)
-      );
+    const postsContainer = document.getElementById("posts");
+    if (!postsContainer) {
+      console.error("No se encontró el contenedor de publicaciones");
+      return;
     }
 
-    const snapshot = await getDocs(q);
-    const postsContainer = document.getElementById("posts");
-    if (!loadMore) postsContainer.innerHTML = "";
+    // Construir la consulta
+    const queryConstraints = [
+      orderBy("expiresAt", "desc"),
+      limit(loadMore ? loadMoreLimit : initialLoadLimit)
+    ];
     
-    let postsRendered = 0;
+    if (loadMore && lastVisible) {
+      queryConstraints.push(startAfter(lastVisible));
+    }
+
+    const q = query(collection(db, "mensajes"), ...queryConstraints);
+    const snapshot = await getDocs(q);
+
+    if (!loadMore) {
+      postsContainer.innerHTML = "";
+    }
+
+    if (snapshot.empty) {
+      if (!loadMore) {
+        postsContainer.innerHTML = `
+          <div class="no-posts-message">
+            No hay relatos para mostrar, ¡compártenos el tuyo!
+          </div>
+        `;
+      }
+      hasMore = false;
+      return;
+    }
+
+    // Procesar cada documento
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
       const timeLeft = data.expiresAt - Date.now();
       
       if (timeLeft > 0) {
-        const decryptedMessage = decryptMessage(data.texto);
-        const postDiv = document.createElement("div");
-        postDiv.className = "post";
-        postDiv.innerHTML = 
-          <div class="post-header">
-            <span class="post-id">ID: ${docSnap.id}</span>
-            <span>Edad: ${data.edad || "N/A"}</span>
-            <span>Sexo: ${data.sexo}</span>
-          </div>
-          <div class="post-content">${decryptedMessage}</div>
-          <div class="post-footer">
-            <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
-            <div class="vote-buttons">
-              <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
-              <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
+        try {
+          const decryptedMessage = decryptMessage(data.texto);
+          const postDiv = document.createElement("div");
+          postDiv.className = "post";
+          postDiv.innerHTML = `
+            <div class="post-header">
+              <span class="post-id">ID: ${docSnap.id}</span>
+              <span>Edad: ${data.edad || "N/A"}</span>
+              <span>Sexo: ${data.sexo}</span>
             </div>
-          </div>
-          <div class="comments-section">
-            <div class="comments-header">
-              <h4>Comentarios (${data.commentCount || 0})</h4>
+            <div class="post-content">${decryptedMessage}</div>
+            <div class="post-footer">
+              <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
+              <div class="vote-buttons">
+                <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
+                <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
+              </div>
             </div>
-            <div id="comments-${docSnap.id}" class="comments-container"></div>
-            <div class="comment-form">
-              <textarea 
-                id="comment-input-${docSnap.id}" 
-                placeholder="Escribe un comentario..."
-                maxlength="500"
-              ></textarea>
-              <button onclick="submitComment('${docSnap.id}')">Comentar</button>
-            </div>
-          </div>
-        ;
-        postsContainer.appendChild(postDiv);
-        setTimeout(() => postDiv.classList.add('post-visible'), 50);
-        setupVotingButtons(docSnap.id);
-        postsRendered++;
+          `;
+          
+          postsContainer.appendChild(postDiv);
+          
+          // Configurar eventos de votación
+          document.getElementById(`like-${docSnap.id}`).addEventListener("click", () => handleVote("like", docSnap.id));
+          document.getElementById(`dislike-${docSnap.id}`).addEventListener("click", () => handleVote("dislike", docSnap.id));
+          
+          // Verificar si ya se votó
+          if (localStorage.getItem(`vote-${docSnap.id}`)) {
+            document.getElementById(`like-${docSnap.id}`).disabled = true;
+            document.getElementById(`dislike-${docSnap.id}`).disabled = true;
+          }
+        } catch (error) {
+          console.error("Error al procesar publicación:", error);
+        }
       }
     });
-    
-    if (!loadMore && postsRendered === 0) {
-      postsContainer.innerHTML = 
-        <div class="no-posts-message">
-          No hay relatos para mostrar, ¡compártenos el tuyo!
-          <button id="publish-now-btn" class="submit-btn">Publicar ahora</button>
-        </div>
-      ;
-      document.getElementById("publish-now-btn").addEventListener("click", () => {
-        messageInput.focus();
-      });
-    }
-    
+
     lastVisible = snapshot.docs[snapshot.docs.length - 1];
     hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
-    setupCommentsListeners(snapshot);
-    updateCountdown();
+    
   } catch (error) {
     console.error("Error cargando publicaciones:", error);
+    const postsContainer = document.getElementById("posts");
+    if (postsContainer) {
+      postsContainer.innerHTML = `
+        <div class="error-message">
+          Error al cargar publicaciones. Intenta recargar la página.
+        </div>
+      `;
+    }
   } finally {
     hideLoader();
     loading = false;
+    updateCountdown();
   }
 }
 
-function handleScroll() {
-  const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-  if (scrollHeight - (scrollTop + clientHeight) < 500) {
-    loadPosts(true);
+// Configurar scroll infinito
+function setupScrollListener() {
+  window.addEventListener("scroll", () => {
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    if (scrollTop + clientHeight > scrollHeight - 500 && !loading && hasMore) {
+      loadPosts(true);
+    }
+  });
+}
+
+// Inicialización
+async function init() {
+  try {
+    await deleteExpiredMessages();
+    updateCharCount();
+    setupScrollListener();
+    loadPosts();
+    setInterval(updateCountdown, 1000);
+    setInterval(deleteExpiredMessages, 60000); // Limpiar cada minuto
+  } catch (error) {
+    console.error("Error en inicialización:", error);
   }
 }
 
+// Funciones auxiliares
 function showLoader() {
-  loadingSpinner.style.display = 'block';
+  if (loadingSpinner) loadingSpinner.style.display = "block";
 }
 
 function hideLoader() {
-  loadingSpinner.style.display = 'none';
+  if (loadingSpinner) loadingSpinner.style.display = "none";
 }
 
-async function init() {
-  await deleteExpiredMessages();
-  updateCharCount();
-  loadPosts();
-  window.addEventListener('scroll', handleScroll);
-}
-
+// Iniciar la aplicación
 init();
