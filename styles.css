@@ -1,28 +1,28 @@
-/* Variables globales para modo claro (ya existentes) */
+/* Importar fuente Poppins desde Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* Variables globales para modo claro */
 :root {
-  --primary-color: #4285f4;      /* Acentos y encabezados */
+  --primary-color: #4285f4;
   --success-color: #34a853;
   --danger-color: #ea4335;
-  --light-color: #ffffff;        /* Fondo principal: blanco */
-  --dark-color: #333333;         /* Texto principal */
+  --light-color: #ffffff;
+  --dark-color: #333333;
   --accent-color: #fbbc05;
   --border-radius: 10px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease-in-out;
 }
 
-/* Variables para modo oscuro, se aplicarán cuando se active la clase "dark-mode" en el body */
+/* Variables para modo oscuro (se activan con la clase .dark-mode en body) */
 body.dark-mode {
-  --primary-color: #8ab4f8;       /* Un azul más suave */
+  --primary-color: #8ab4f8;   /* Un azul claro para acentos */
   --success-color: #81c995;
   --danger-color: #f28b82;
-  --light-color: #202124;         /* Fondo oscuro */
-  --dark-color: #e8eaed;          /* Texto claro */
-  --accent-color: #fbbc05;        /* Lo mantenemos o ajusta según gusto */
-  /* Puedes ajustar otras variables si lo deseas */
+  --light-color: #000000;     /* Fondo negro */
+  --dark-color: #ffffff;      /* Texto blanco */
+  --accent-color: #fbbc05;
 }
-
-/* El resto de tu CSS se mantiene igual */
 
 /* Reset y estilos generales */
 * {
@@ -42,6 +42,25 @@ body {
   width: 90%;
   max-width: 600px;
   margin: 20px auto;
+}
+
+/* Botón para alternar modo oscuro */
+.dark-mode-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 8px 12px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  z-index: 1000;
+}
+
+.dark-mode-toggle:hover {
+  background: #3367d6;
 }
 
 /* Títulos principales */
@@ -181,7 +200,7 @@ textarea:focus, select:focus, input:focus {
 }
 
 .post-header span {
-  margin-right: 15px; /* Separa Edad, Sexo e ID */
+  margin-right: 15px; /* Espaciado entre elementos */
 }
 
 /* Destacar la ID */
@@ -271,7 +290,7 @@ textarea:focus, select:focus, input:focus {
   100% { transform: rotate(360deg); }
 }
 
-/* Mensaje de publicaciones vacías */
+/* Mensaje cuando no hay publicaciones */
 .no-posts-message {
   color: #ccc;
   font-size: 1.2em;
