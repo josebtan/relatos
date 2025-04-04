@@ -67,7 +67,7 @@ const loadingSpinner = document.getElementById("loading-spinner");
 messageInput.addEventListener("input", updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
-  charCount.textContent = ${remaining} caracteres restantes;
+  charCount.textContent = `${remaining} caracteres restantes`;
   charCount.style.color = remaining < 100 ? "#ea4335" : "#666";
 }
 
