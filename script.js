@@ -1,12 +1,17 @@
-// Alternar modo oscuro
+
+// Alternar modo oscuro con estilos mejorados
 const darkModeToggle = document.getElementById("dark-mode-toggle");
 if (darkModeToggle) {
   darkModeToggle.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
+
+    // Cambia la clase del botón para reflejar el estado del modo oscuro
+    darkModeToggle.classList.toggle("active");
+
     if (document.body.classList.contains("dark-mode")) {
-      darkModeToggle.textContent = "Modo Claro";
+      darkModeToggle.innerHTML = `<span>🌞 Modo Claro</span>`;
     } else {
-      darkModeToggle.textContent = "Modo Oscuro";
+      darkModeToggle.innerHTML = `<span>🌙 Modo Oscuro</span>`;
     }
   });
 }
