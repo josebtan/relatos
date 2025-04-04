@@ -345,8 +345,8 @@ async function loadPosts(loadMore = false) {
           <div class="post-footer">
             <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
             <div class="vote-buttons">
-              `<button class="like-btn" id="like-${docSnap.id}">👍 <span class="vote-count">${data.likes}</span></button>
-<button class="dislike-btn" id="dislike-${docSnap.id}">👎 <span class="vote-count">${data.dislikes}</span></button>`
+              <button class="like-btn" id="like-${docSnap.id}">👍 <span class="vote-count">${data.likes}</span></button>
+              <button class="dislike-btn" id="dislike-${docSnap.id}">👎 <span class="vote-count">${data.dislikes}</span></button>
             </div>
           </div>
           <div class="comments-section">
