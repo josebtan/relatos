@@ -148,9 +148,9 @@ function formatTimeRemaining(milliseconds) {
   const days = Math.floor(totalHours / 24);
   
   if (days > 0) {
-    const remainingHours = totalHours % 24;
-    return ${days}d ${remainingHours}h;
-  }
+  const remainingHours = totalHours % 24;
+  return `${days}d ${remainingHours}h`;  // ← Backticks agregados
+}
   if (totalHours > 0) {
     const remainingMinutes = totalMinutes % 60;
     return ${totalHours}h ${remainingMinutes}m;
