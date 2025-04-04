@@ -14,13 +14,13 @@
   --transition: all 0.3s ease-in-out;
 }
 
-/* Variables para modo oscuro (se activan con la clase .dark-mode en body) */
+/* Variables para modo oscuro */
 body.dark-mode {
-  --primary-color: #8ab4f8;   /* Un azul claro para acentos */
+  --primary-color: #8ab4f8;
   --success-color: #81c995;
-  --danger-color: #f28b82;
-  --light-color: #000000;     /* Fondo negro */
-  --dark-color: #ffffff;      /* Texto blanco */
+  --danger-color: #ea4335;
+  --light-color: #121212;
+  --dark-color: #e8eaed;
   --accent-color: #fbbc05;
 }
 
@@ -44,7 +44,7 @@ body {
   margin: 20px auto;
 }
 
-/* Botón para alternar modo oscuro */
+/* Botón para alternar modo oscuro (si está implementado en el HTML) */
 .dark-mode-toggle {
   position: fixed;
   top: 20px;
@@ -185,11 +185,11 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con franja de color */
+/* Encabezado de la publicación con franja de color gruesa */
 .post-header {
   background-color: var(--primary-color);
   color: white;
-  padding: 12px;
+  padding: 16px;  /* Aumenté el padding para hacerla más gruesa */
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
