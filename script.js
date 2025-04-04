@@ -1,3 +1,16 @@
+// Alternar modo oscuro
+const darkModeToggle = document.getElementById("dark-mode-toggle");
+if (darkModeToggle) {
+  darkModeToggle.addEventListener("click", () => {
+    document.body.classList.toggle("dark-mode");
+    if (document.body.classList.contains("dark-mode")) {
+      darkModeToggle.textContent = "Modo Claro";
+    } else {
+      darkModeToggle.textContent = "Modo Oscuro";
+    }
+  });
+}
+
 // Importar funciones necesarias de Firebase
 import { 
   initializeApp 
