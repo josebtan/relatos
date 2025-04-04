@@ -13,35 +13,7 @@
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease-in-out;
 }
-#dark-mode-toggle {
-  background: #333;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.3s, color 0.3s;
-}
 
-#dark-mode-toggle:hover {
-  background: #555;
-}
-
-#dark-mode-toggle.active {
-  background: #f5f5f5;
-  color: #222;
-  border: 1px solid #ddd;
-}
-
-#dark-mode-toggle span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
 /* Variables para modo oscuro */
 body.dark-mode {
   --primary-color: #8ab4f8;
