@@ -3,52 +3,24 @@
 
 /* Variables globales para modo claro */
 :root {
-  --primary-color: #4285f4;      /* Color para acentos y encabezados */
+  --primary-color: #4285f4;
   --success-color: #34a853;
   --danger-color: #ea4335;
-  --light-color: #ffffff;        /* Fondo principal: blanco */
-  --dark-color: #333333;         /* Texto principal */
+  --light-color: #ffffff;
+  --dark-color: #333333;
   --accent-color: #fbbc05;
   --border-radius: 10px;
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease-in-out;
 }
-#dark-mode-toggle {
-  background: #333;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.3s, color 0.3s;
-}
 
-#dark-mode-toggle:hover {
-  background: #555;
-}
-
-#dark-mode-toggle.active {
-  background: #f5f5f5;
-  color: #222;
-  border: 1px solid #ddd;
-}
-
-#dark-mode-toggle span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
 /* Variables para modo oscuro */
 body.dark-mode {
   --primary-color: #8ab4f8;
   --success-color: #81c995;
   --danger-color: #ea4335;
   --light-color: #121212;
-  --dark-color: #e8eaed; /* Este se usa en textos generales, pero ajustaremos los comentarios */
+  --dark-color: #e8eaed;
   --accent-color: #fbbc05;
 }
 
@@ -64,6 +36,7 @@ body {
   background-color: var(--light-color);
   color: var(--dark-color);
   padding: 20px;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -72,23 +45,47 @@ body {
   margin: 20px auto;
 }
 
-/* Botón para alternar modo oscuro (si se usa en el HTML) */
-.dark-mode-toggle {
+/* Botón modo oscuro */
+#darkModeToggle {
+  background: var(--light-color);
+  color: var(--dark-color);
+  border: 1px solid var(--dark-color);
+  padding: 8px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: var(--transition);
   position: fixed;
   top: 20px;
   right: 20px;
-  padding: 8px 12px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
   z-index: 1000;
 }
 
-.dark-mode-toggle:hover {
-  background: #3367d6;
+#darkModeToggle .icon {
+  display: none;
+}
+
+#darkModeToggle .icon-sun {
+  display: inline-block;
+}
+
+body.dark-mode #darkModeToggle .icon-sun {
+  display: none;
+}
+
+body.dark-mode #darkModeToggle .icon-moon {
+  display: inline-block;
+}
+
+#darkModeToggle .toggle-text::before {
+  content: "Modo Oscuro";
+}
+
+body.dark-mode #darkModeToggle .toggle-text::before {
+  content: "Modo Claro";
 }
 
 /* Títulos principales */
@@ -143,11 +140,13 @@ textarea, select, input {
   border-radius: var(--border-radius);
   font-size: 16px;
   transition: var(--transition);
+  background-color: var(--light-color);
+  color: var(--dark-color);
 }
 
 textarea {
   min-height: 120px;
-  resize: none; /* Deshabilita el redimensionamiento */
+  resize: none;
 }
 
 textarea:focus, select:focus, input:focus {
@@ -190,7 +189,6 @@ textarea:focus, select:focus, input:focus {
   margin-top: 20px;
 }
 
-/* Publicación: fondo blanco, con encabezado destacado */
 .post {
   background: var(--light-color);
   padding: 20px;
@@ -214,11 +212,11 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con franja de color gruesa */
+/* Encabezado de la publicación */
 .post-header {
   background-color: var(--primary-color);
   color: white;
-  padding: 16px;  /* Más padding para franja más gruesa */
+  padding: 16px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
@@ -229,10 +227,9 @@ textarea:focus, select:focus, input:focus {
 }
 
 .post-header span {
-  margin-right: 15px; /* Espaciado entre elementos (ID, Edad, Sexo) */
+  margin-right: 15px;
 }
 
-/* Destacar la ID */
 .post-id {
   font-style: italic;
   opacity: 0.8;
@@ -294,14 +291,6 @@ textarea:focus, select:focus, input:focus {
   color: white;
 }
 
-.like-btn:hover:not(.active-like) {
-  background-color: #d2e3fc;
-}
-
-.dislike-btn:hover:not(.active-dislike) {
-  background-color: #f9d7d2;
-}
-
 /* Spinner de carga */
 .spinner {
   width: 40px;
@@ -319,41 +308,11 @@ textarea:focus, select:focus, input:focus {
   100% { transform: rotate(360deg); }
 }
 
-/* Mensaje cuando no hay publicaciones */
-.no-posts-message {
-  color: #ccc;
-  font-size: 1.2em;
-  text-align: center;
-  margin-top: 100px;
-  font-style: italic;
-  pointer-events: none;
-  user-select: none;
-}
-
 /* Sección de comentarios */
 .comments-section {
   margin-top: 20px;
   border-top: 1px solid #eee;
   padding-top: 15px;
-}
-
-.comments-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.comments-header h4 {
-  color: var(--primary-color);
-  margin: 0;
-}
-
-.comments-container {
-  margin-bottom: 15px;
-  max-height: 300px;
-  overflow-y: auto;
-  padding-right: 10px;
 }
 
 .comment {
@@ -367,69 +326,10 @@ textarea:focus, select:focus, input:focus {
   color: var(--dark-color);
 }
 
-.comment:before {
-  content: "";
-  position: absolute;
-  left: -20px;
-  top: 15px;
-  width: 15px;
-  height: 3px;
-  background-color: #ddd;
-}
-
-.comment-content {
-  font-size: 14px;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.comment-footer {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  justify-content: space-between;
-}
-
-.comment-form {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.comment-form textarea {
-  flex: 1;
-  padding: 10px;
-  min-height: 60px;
-  font-size: 14px;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius);
-}
-
-.comment-form button {
-  padding: 0 15px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
-  align-self: flex-end;
-  height: 40px;
-  margin-bottom: 5px;
-}
-
-.comment-form button:hover {
-  background: #357abd;
-}
-
-/* Ajustes para comentarios en modo oscuro */
+/* Modo oscuro para comentarios */
 body.dark-mode .comment {
   background: #2a2a2a;
-  color: #cccccc;  /* Texto un poco más oscuro para contraste */
-}
-body.dark-mode .comment:before {
-  background-color: #555;
+  color: #cccccc;
 }
 
 /* Responsive */
@@ -437,5 +337,10 @@ body.dark-mode .comment:before {
   .form-fields {
     flex-direction: column;
     gap: 15px;
+  }
+  
+  #darkModeToggle {
+    top: 10px;
+    right: 10px;
   }
 }
