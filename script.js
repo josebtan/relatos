@@ -1,4 +1,7 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+// Importar funciones necesarias de Firebase
+import { 
+  initializeApp 
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
@@ -11,12 +14,14 @@ import {
   increment, 
   serverTimestamp, 
   deleteDoc, 
-  getDocs,
-  getDoc,
-  limit,
-  startAfter
+  getDocs, 
+  getDoc, 
+  limit, 
+  startAfter, 
+  where 
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDXTQyWKFT_6SabS5EcSpCDrS5AchxbIxc",
   authDomain: "tempsecret-254d8.firebaseapp.com",
@@ -31,7 +36,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const SECRET_KEY = "claveSecreta123";
 
-// Variables de control
+// Variables de control para paginación y votación
 let isUpdating = false;
 let lastVisible = null;
 let loading = false;
@@ -39,11 +44,13 @@ let hasMore = true;
 const initialLoadLimit = 15;
 const loadMoreLimit = 8;
 const voteQueue = [];
+
+// Elementos del DOM
 const messageInput = document.getElementById("message");
 const charCount = document.getElementById("char-count");
-const loadingSpinner = document.getElementById('loading-spinner');
+const loadingSpinner = document.getElementById("loading-spinner");
 
-// Configurar contador de caracteres
+// Actualizar contador de caracteres
 messageInput.addEventListener("input", updateCharCount);
 function updateCharCount() {
   const remaining = 1000 - messageInput.value.length;
@@ -51,7 +58,7 @@ function updateCharCount() {
   charCount.style.color = remaining < 100 ? "#ea4335" : "#666";
 }
 
-// Funciones de cifrado
+// Funciones de cifrado/descifrado (usando CryptoJS)
 function encryptMessage(message) {
   return CryptoJS.AES.encrypt(message, SECRET_KEY).toString();
 }
@@ -61,7 +68,7 @@ function decryptMessage(encryptedMessage) {
   return bytes.toString(CryptoJS.enc.Utf8);
 }
 
-// Enviar mensaje
+// Enviar publicación
 async function submitPost() {
   const message = messageInput.value.trim();
   const duration = parseInt(document.getElementById("duration").value);
@@ -106,69 +113,110 @@ async function submitPost() {
 
 document.getElementById("submit-button").addEventListener("click", submitPost);
 
-// Manejo de votación
+/**
+ * Elimina de Firebase los mensajes expirados.
+ */
+async function deleteExpiredMessages() {
+  const now = Date.now();
+  const expiredQuery = query(collection(db, "mensajes"), where("expiresAt", "<", now));
+  const snapshot = await getDocs(expiredQuery);
+  snapshot.forEach(async (docSnap) => {
+    await deleteDoc(doc(db, "mensajes", docSnap.id));
+    console.log("Mensaje expirado eliminado:", docSnap.id);
+  });
+}
+
+/**
+ * Formatea el tiempo restante.
+ */
+function formatTimeRemaining(milliseconds) {
+  const totalMinutes = Math.floor(milliseconds / 60000);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const days = Math.floor(totalHours / 24);
+  
+  if (days > 0) {
+    const remainingHours = totalHours % 24;
+    return `${days}d ${remainingHours}h`;
+  }
+  if (totalHours > 0) {
+    const remainingMinutes = totalMinutes % 60;
+    return `${totalHours}h ${remainingMinutes}m`;
+  }
+  
+  const remainingSeconds = Math.floor((milliseconds % 60000) / 1000);
+  return `${totalMinutes}m ${remainingSeconds}s`;
+}
+
+/**
+ * Actualiza el contador y elimina mensajes expirados de la interfaz y Firebase.
+ */
+function updateCountdown() {
+  document.querySelectorAll(".countdown").forEach((counter) => {
+    const expiration = parseInt(counter.getAttribute("data-expiration"));
+    const postId = counter.getAttribute("data-id");
+    const timeLeft = expiration - Date.now();
+
+    if (timeLeft > 0) {
+      counter.textContent = `⏳ ${formatTimeRemaining(timeLeft)}`;
+    } else {
+      counter.textContent = "Expirado";
+      const postElement = counter.closest(".post");
+      if (postElement) postElement.remove();
+      deleteDoc(doc(db, "mensajes", postId)).catch(console.error);
+    }
+  });
+  setTimeout(updateCountdown, 1000);
+}
+
+/**
+ * Manejo de votos: deshabilita los botones luego de votar y guarda en localStorage.
+ */
 async function handleVote(type, postId) {
-  if (isUpdating) {
-    voteQueue.push({ type, postId });
+  const voteKey = `vote-${postId}`;
+  const previousVote = localStorage.getItem(voteKey);
+  if (previousVote) {
+    alert("Ya has votado en esta publicación.");
     return;
   }
 
-  isUpdating = true;
-  
+  const postRef = doc(db, "mensajes", postId);
+  let updates = {};
+  if (type === "like") {
+    updates.likes = increment(1);
+  } else if (type === "dislike") {
+    updates.dislikes = increment(1);
+  }
+
   try {
-    const userVotes = JSON.parse(localStorage.getItem("userVotes")) || {};
-    const previousVote = userVotes[postId];
-    const postRef = doc(db, "mensajes", postId);
-    
-    const updates = {};
-    if (previousVote === type) {
-      updates[`${type}s`] = increment(-1);
-      delete userVotes[postId];
-    } else {
-      if (previousVote) {
-        updates[`${previousVote}s`] = increment(-1);
-      }
-      updates[`${type}s`] = increment(1);
-      userVotes[postId] = type;
-    }
-
     await updateDoc(postRef, updates);
-    localStorage.setItem("userVotes", JSON.stringify(userVotes));
-    updateButtonStates(postId, userVotes[postId]);
+    localStorage.setItem(voteKey, type);
+    // Deshabilitar los botones de este post
+    document.getElementById(`like-${postId}`).disabled = true;
+    document.getElementById(`dislike-${postId}`).disabled = true;
   } catch (error) {
-    console.error("Error al votar:", error);
-  } finally {
-    isUpdating = false;
-    if (voteQueue.length > 0) {
-      const nextVote = voteQueue.shift();
-      handleVote(nextVote.type, nextVote.postId);
-    }
+    console.error("Error al actualizar voto:", error);
   }
 }
 
-function updateButtonStates(postId, currentVote) {
-  const likeBtn = document.getElementById(`like-${postId}`);
-  const dislikeBtn = document.getElementById(`dislike-${postId}`);
-
-  if (likeBtn && dislikeBtn) {
-    likeBtn.classList.toggle("active-like", currentVote === "like");
-    dislikeBtn.classList.toggle("active-dislike", currentVote === "dislike");
-  }
-}
-
+/**
+ * Configura los botones de voto para cada publicación.
+ * Al cargar se deshabilitan si ya se votó.
+ */
 function setupVotingButtons(postId) {
-  const userVotes = JSON.parse(localStorage.getItem("userVotes")) || {};
-  const currentVote = userVotes[postId];
-  updateButtonStates(postId, currentVote);
-
-  const likeButton = document.getElementById(`like-${postId}`);
-  const dislikeButton = document.getElementById(`dislike-${postId}`);
-
-  likeButton?.addEventListener("click", () => handleVote("like", postId));
-  dislikeButton?.addEventListener("click", () => handleVote("dislike", postId));
+  const voteKey = `vote-${postId}`;
+  const previousVote = localStorage.getItem(voteKey);
+  if (previousVote) {
+    document.getElementById(`like-${postId}`).disabled = true;
+    document.getElementById(`dislike-${postId}`).disabled = true;
+  }
+  
+  document.getElementById(`like-${postId}`).addEventListener("click", () => handleVote("like", postId));
+  document.getElementById(`dislike-${postId}`).addEventListener("click", () => handleVote("dislike", postId));
 }
 
-// Sistema de comentarios
+/**
+ * Sistema de comentarios.
+ */
 window.submitComment = async function(postId) {
   const commentInput = document.getElementById(`comment-input-${postId}`);
   const commentText = commentInput.value.trim();
@@ -201,7 +249,7 @@ window.submitComment = async function(postId) {
     console.error("Error al comentar:", error);
     alert("Ocurrió un error al publicar el comentario");
   }
-}
+};
 
 function renderComments(postId, comments) {
   const commentsContainer = document.getElementById(`comments-${postId}`);
@@ -217,61 +265,27 @@ function renderComments(postId, comments) {
   `).join("");
 }
 
-// Gestión de publicaciones
-async function deleteExpiredMessages() {
-  const now = Date.now();
-  const querySnapshot = await getDocs(collection(db, "mensajes"));
-  
-  querySnapshot.forEach(async (docSnap) => {
-    if (docSnap.data().expiresAt <= now) {
-      await deleteDoc(doc(db, "mensajes", docSnap.id));
-    }
+function setupCommentsListeners(snapshot) {
+  snapshot.forEach((docSnap) => {
+    const commentsQuery = query(
+      collection(db, "mensajes", docSnap.id, "comentarios"),
+      orderBy("timestamp", "asc")
+    );
+    
+    onSnapshot(commentsQuery, (commentSnapshot) => {
+      const comments = commentSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      renderComments(docSnap.id, comments);
+    });
   });
 }
 
-// Función mejorada para mostrar el tiempo restante
-function formatTimeRemaining(milliseconds) {
-  const totalMinutes = Math.floor(milliseconds / 60000);
-  const totalHours = Math.floor(totalMinutes / 60);
-  const days = Math.floor(totalHours / 24);
-  
-  if (days > 0) {
-    const remainingHours = totalHours % 24;
-    return `${days}d ${remainingHours}h`;
-  }
-  if (totalHours > 0) {
-    const remainingMinutes = totalMinutes % 60;
-    return `${totalHours}h ${remainingMinutes}m`;
-  }
-  
-  const remainingSeconds = Math.floor((milliseconds % 60000) / 1000);
-  return `${totalMinutes}m ${remainingSeconds}s`;
-}
-
-function updateCountdown() {
-  document.querySelectorAll(".countdown").forEach((counter) => {
-    const expiration = parseInt(counter.getAttribute("data-expiration"));
-    const postId = counter.getAttribute("data-id");
-
-    if (expiration - Date.now() <= 0) {
-      deleteDoc(doc(db, "mensajes", postId)).catch(console.error);
-      const postElement = counter.closest(".post");
-      if (postElement) {
-        postElement.remove();
-      }
-    } else {
-      const timeRemaining = expiration - Date.now();
-      counter.textContent = `⏳ ${formatTimeRemaining(timeRemaining)}`;
-    }
-  });
-
-  setTimeout(updateCountdown, 1000);
-}
-
-// Manejo de carga de publicaciones
-function showLoader() { loadingSpinner.style.display = 'block'; }
-function hideLoader() { loadingSpinner.style.display = 'none'; }
-
+/**
+ * Manejo de carga de publicaciones con paginación y spinner.
+ * Si no hay publicaciones, muestra un mensaje en letras gris claro y un botón para publicar.
+ */
 async function loadPosts(loadMore = false) {
   if (loading || !hasMore) return;
   
@@ -295,60 +309,71 @@ async function loadPosts(loadMore = false) {
       );
     }
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const postsContainer = document.getElementById("posts");
-      if (!loadMore) postsContainer.innerHTML = "";
+    const snapshot = await getDocs(q);
+    const postsContainer = document.getElementById("posts");
+    if (!loadMore) postsContainer.innerHTML = "";
+    
+    let postsRendered = 0;
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      const timeLeft = data.expiresAt - Date.now();
       
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const timeLeft = data.expiresAt - Date.now();
-        
-        if (timeLeft > 0) {
-          const decryptedMessage = decryptMessage(data.texto);
-          const postDiv = document.createElement("div");
-          postDiv.className = "post";
-          postDiv.innerHTML = `
-  <div class="post-header">
-    <span class="post-id">ID: ${docSnap.id}</span>
-    <span>Edad: ${data.edad || "N/A"}</span>
-    <span>Sexo: ${data.sexo}</span>
-  </div>
-  <div class="post-content">${decryptedMessage}</div>
-  <div class="post-footer">
-    <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
-    <div class="vote-buttons">
-      <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
-      <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
-    </div>
-  </div>
-            <div class="comments-section">
-              <div class="comments-header">
-                <h4>Comentarios (${data.commentCount || 0})</h4>
-              </div>
-              <div id="comments-${docSnap.id}" class="comments-container"></div>
-              <div class="comment-form">
-                <textarea 
-                  id="comment-input-${docSnap.id}" 
-                  placeholder="Escribe un comentario..."
-                  maxlength="500"
-                ></textarea>
-                <button onclick="submitComment('${docSnap.id}')">Comentar</button>
-              </div>
+      if (timeLeft > 0) {
+        const decryptedMessage = decryptMessage(data.texto);
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `
+          <div class="post-header">
+            <span class="post-id">ID: ${docSnap.id}</span>
+            <span>Edad: ${data.edad || "N/A"}</span>
+            <span>Sexo: ${data.sexo}</span>
+          </div>
+          <div class="post-content">${decryptedMessage}</div>
+          <div class="post-footer">
+            <span class="countdown" data-expiration="${data.expiresAt}" data-id="${docSnap.id}"></span>
+            <div class="vote-buttons">
+              <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
+              <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
             </div>
-          `;
-
-          postsContainer.appendChild(postDiv);
-          setTimeout(() => postDiv.classList.add('post-visible'), 50);
-          setupVotingButtons(docSnap.id);
-        }
-      });
-
-      lastVisible = snapshot.docs[snapshot.docs.length - 1];
-      hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
-      setupCommentsListeners(snapshot);
-      updateCountdown();
+          </div>
+          <div class="comments-section">
+            <div class="comments-header">
+              <h4>Comentarios (${data.commentCount || 0})</h4>
+            </div>
+            <div id="comments-${docSnap.id}" class="comments-container"></div>
+            <div class="comment-form">
+              <textarea 
+                id="comment-input-${docSnap.id}" 
+                placeholder="Escribe un comentario..."
+                maxlength="500"
+              ></textarea>
+              <button onclick="submitComment('${docSnap.id}')">Comentar</button>
+            </div>
+          </div>
+        `;
+        postsContainer.appendChild(postDiv);
+        setTimeout(() => postDiv.classList.add('post-visible'), 50);
+        setupVotingButtons(docSnap.id);
+        postsRendered++;
+      }
     });
-
+    
+    if (!loadMore && postsRendered === 0) {
+      postsContainer.innerHTML = `
+        <div class="no-posts-message">
+          No hay relatos para mostrar, ¡compártenos el tuyo!
+          <button id="publish-now-btn" class="submit-btn">Publicar ahora</button>
+        </div>
+      `;
+      document.getElementById("publish-now-btn").addEventListener("click", () => {
+        messageInput.focus();
+      });
+    }
+    
+    lastVisible = snapshot.docs[snapshot.docs.length - 1];
+    hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
+    setupCommentsListeners(snapshot);
+    updateCountdown();
   } catch (error) {
     console.error("Error cargando publicaciones:", error);
   } finally {
@@ -357,24 +382,6 @@ async function loadPosts(loadMore = false) {
   }
 }
 
-function setupCommentsListeners(snapshot) {
-  snapshot.forEach((docSnap) => {
-    const commentsQuery = query(
-      collection(db, "mensajes", docSnap.id, "comentarios"),
-      orderBy("timestamp", "asc")
-    );
-    
-    onSnapshot(commentsQuery, (commentSnapshot) => {
-      const comments = commentSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      renderComments(docSnap.id, comments);
-    });
-  });
-}
-
-// Manejo de scroll
 function handleScroll() {
   const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
   if (scrollHeight - (scrollTop + clientHeight) < 500) {
@@ -382,7 +389,14 @@ function handleScroll() {
   }
 }
 
-// Inicialización
+function showLoader() {
+  loadingSpinner.style.display = 'block';
+}
+
+function hideLoader() {
+  loadingSpinner.style.display = 'none';
+}
+
 async function init() {
   await deleteExpiredMessages();
   updateCharCount();
