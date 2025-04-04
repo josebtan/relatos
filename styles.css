@@ -13,6 +13,7 @@
   --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease-in-out;
 }
+
 #dark-mode-toggle {
   background: #333;
   color: white;
@@ -42,13 +43,14 @@
   align-items: center;
   gap: 5px;
 }
+
 /* Variables para modo oscuro */
 body.dark-mode {
   --primary-color: #8ab4f8;
   --success-color: #81c995;
   --danger-color: #ea4335;
   --light-color: #121212;
-  --dark-color: #e8eaed; /* Este se usa en textos generales, pero ajustaremos los comentarios */
+  --dark-color: #e8eaed;
   --accent-color: #fbbc05;
 }
 
@@ -72,7 +74,7 @@ body {
   margin: 20px auto;
 }
 
-/* Botón para alternar modo oscuro (si se usa en el HTML) */
+/* Botón para alternar modo oscuro */
 .dark-mode-toggle {
   position: fixed;
   top: 20px;
@@ -147,7 +149,7 @@ textarea, select, input {
 
 textarea {
   min-height: 120px;
-  resize: none; /* Deshabilita el redimensionamiento */
+  resize: none;
 }
 
 textarea:focus, select:focus, input:focus {
@@ -190,7 +192,6 @@ textarea:focus, select:focus, input:focus {
   margin-top: 20px;
 }
 
-/* Publicación: fondo blanco, con encabezado destacado */
 .post {
   background: var(--light-color);
   padding: 20px;
@@ -214,11 +215,10 @@ textarea:focus, select:focus, input:focus {
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Encabezado de la publicación con franja de color gruesa */
 .post-header {
   background-color: var(--primary-color);
   color: white;
-  padding: 16px;  /* Más padding para franja más gruesa */
+  padding: 16px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   font-size: 14px;
   font-weight: 600;
@@ -229,16 +229,14 @@ textarea:focus, select:focus, input:focus {
 }
 
 .post-header span {
-  margin-right: 15px; /* Espaciado entre elementos (ID, Edad, Sexo) */
+  margin-right: 15px;
 }
 
-/* Destacar la ID */
 .post-id {
   font-style: italic;
   opacity: 0.8;
 }
 
-/* Contenido y pie de la publicación */
 .post-content {
   font-size: 16px;
   line-height: 1.5;
@@ -253,7 +251,6 @@ textarea:focus, select:focus, input:focus {
   margin-top: 15px;
 }
 
-/* Contador de tiempo */
 .countdown {
   font-size: 14px;
   color: var(--danger-color);
@@ -300,6 +297,34 @@ textarea:focus, select:focus, input:focus {
 
 .dislike-btn:hover:not(.active-dislike) {
   background-color: #f9d7d2;
+}
+
+/* Estilos específicos para modo oscuro - Likes/Dislikes */
+body.dark-mode .like-btn,
+body.dark-mode .dislike-btn {
+  color: #b0b0b0;
+}
+
+body.dark-mode .like-btn {
+  background-color: #1e3a8a;
+  color: #a0c4ff;
+}
+
+body.dark-mode .dislike-btn {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+body.dark-mode .like-btn .vote-count,
+body.dark-mode .dislike-btn .vote-count {
+  color: #d1d5db;
+  font-weight: 600;
+}
+
+body.dark-mode .like-btn:disabled,
+body.dark-mode .dislike-btn:disabled {
+  opacity: 0.8;
+  background-color: #374151;
 }
 
 /* Spinner de carga */
@@ -426,7 +451,7 @@ textarea:focus, select:focus, input:focus {
 /* Ajustes para comentarios en modo oscuro */
 body.dark-mode .comment {
   background: #2a2a2a;
-  color: #cccccc;  /* Texto un poco más oscuro para contraste */
+  color: #cccccc;
 }
 body.dark-mode .comment:before {
   background-color: #555;
