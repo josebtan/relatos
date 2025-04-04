@@ -1,58 +1,15 @@
-/* Importar fuente Poppins desde Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-
-/* Variables globales para modo claro */
 :root {
-  --primary-color: #4285f4;      /* Color para acentos y encabezados */
+  --primary-color: #4285f4;
   --success-color: #34a853;
   --danger-color: #ea4335;
-  --light-color: #ffffff;        /* Fondo principal: blanco */
-  --dark-color: #333333;         /* Texto principal */
-  --accent-color: #fbbc05;
-  --border-radius: 10px;
-  --box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease-in-out;
-}
-#dark-mode-toggle {
-  background: #333;
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.3s, color 0.3s;
+  --warning-color: #fbbc05;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
 }
 
-#dark-mode-toggle:hover {
-  background: #555;
-}
-
-#dark-mode-toggle.active {
-  background: #f5f5f5;
-  color: #222;
-  border: 1px solid #ddd;
-}
-
-#dark-mode-toggle span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-/* Variables para modo oscuro */
-body.dark-mode {
-  --primary-color: #8ab4f8;
-  --success-color: #81c995;
-  --danger-color: #ea4335;
-  --light-color: #121212;
-  --dark-color: #e8eaed; /* Este se usa en textos generales, pero ajustaremos los comentarios */
-  --accent-color: #fbbc05;
-}
-
-/* Reset y estilos generales */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -60,60 +17,31 @@ body.dark-mode {
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--light-color);
-  color: var(--dark-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background-color: #f5f5f5;
+  color: #333;
   padding: 20px;
 }
 
 .container {
-  width: 90%;
-  max-width: 600px;
-  margin: 20px auto;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-/* Botón para alternar modo oscuro (si se usa en el HTML) */
-.dark-mode-toggle {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 8px 12px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  transition: var(--transition);
-  z-index: 1000;
-}
-
-.dark-mode-toggle:hover {
-  background: #3367d6;
-}
-
-/* Títulos principales */
 h1, h2 {
   text-align: center;
+  color: var(--dark-color);
   margin-bottom: 20px;
-  font-weight: 600;
 }
 
-h1 {
-  color: var(--primary-color);
-}
-
-h2 {
-  color: var(--accent-color);
-}
-
-/* Formulario de publicación */
 .post-form {
-  background: var(--light-color);
+  background: white;
   padding: 25px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   margin-bottom: 30px;
-  border: 1px solid #ddd;
 }
 
 .form-fields {
@@ -132,14 +60,13 @@ label {
   display: block;
   margin-bottom: 5px;
   font-weight: 500;
-  color: var(--primary-color);
+  color: var(--dark-color);
 }
 
 textarea, select, input {
   width: 100%;
   padding: 12px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid #ddd;
   border-radius: var(--border-radius);
   font-size: 16px;
   transition: var(--transition);
@@ -147,7 +74,7 @@ textarea, select, input {
 
 textarea {
   min-height: 120px;
-  resize: none; /* Deshabilita el redimensionamiento */
+  resize: vertical;
 }
 
 textarea:focus, select:focus, input:focus {
@@ -159,11 +86,10 @@ textarea:focus, select:focus, input:focus {
 .char-count {
   text-align: right;
   font-size: 14px;
-  color: var(--dark-color);
+  color: #666;
   margin-top: 5px;
 }
 
-/* Botón de publicar */
 .submit-btn {
   width: 100%;
   padding: 12px;
@@ -182,26 +108,21 @@ textarea:focus, select:focus, input:focus {
   transform: translateY(-2px);
 }
 
-/* Publicaciones */
 .posts-container {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  margin-top: 20px;
 }
 
-/* Publicación: fondo blanco, con encabezado destacado */
 .post {
-  background: var(--light-color);
+  background: white;
   padding: 20px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
+  position: relative;
   transition: var(--transition);
   opacity: 0;
   transform: translateY(20px);
-  border: 1px solid #eee;
-  color: var(--dark-color);
-  font-size: 16px;
 }
 
 .post-visible {
@@ -210,39 +131,22 @@ textarea:focus, select:focus, input:focus {
 }
 
 .post:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Encabezado de la publicación con franja de color gruesa */
 .post-header {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 16px;  /* Más padding para franja más gruesa */
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
-  font-size: 14px;
-  font-weight: 600;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin: -20px -20px 10px -20px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #666;
 }
 
-.post-header span {
-  margin-right: 15px; /* Espaciado entre elementos (ID, Edad, Sexo) */
-}
-
-/* Destacar la ID */
-.post-id {
-  font-style: italic;
-  opacity: 0.8;
-}
-
-/* Contenido y pie de la publicación */
 .post-content {
+  margin-bottom: 15px;
   font-size: 16px;
   line-height: 1.5;
-  margin-bottom: 15px;
   word-break: break-word;
 }
 
@@ -253,14 +157,12 @@ textarea:focus, select:focus, input:focus {
   margin-top: 15px;
 }
 
-/* Contador de tiempo */
 .countdown {
-  font-size: 14px;
   color: var(--danger-color);
   font-weight: 500;
+  font-size: 14px;
 }
 
-/* Botones de votación */
 .vote-buttons {
   display: flex;
   gap: 10px;
@@ -273,15 +175,19 @@ textarea:focus, select:focus, input:focus {
   font-size: 14px;
   cursor: pointer;
   transition: var(--transition);
-  color: var(--dark-color);
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .like-btn {
   background-color: #e8f0fe;
+  color: var(--primary-color);
 }
 
 .dislike-btn {
   background-color: #fce8e6;
+  color: var(--danger-color);
 }
 
 .like-btn.active-like {
@@ -302,12 +208,11 @@ textarea:focus, select:focus, input:focus {
   background-color: #f9d7d2;
 }
 
-/* Spinner de carga */
 .spinner {
   width: 40px;
   height: 40px;
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid var(--primary-color);
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 20px auto;
@@ -319,18 +224,6 @@ textarea:focus, select:focus, input:focus {
   100% { transform: rotate(360deg); }
 }
 
-/* Mensaje cuando no hay publicaciones */
-.no-posts-message {
-  color: #ccc;
-  font-size: 1.2em;
-  text-align: center;
-  margin-top: 100px;
-  font-style: italic;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Sección de comentarios */
 .comments-section {
   margin-top: 20px;
   border-top: 1px solid #eee;
@@ -345,7 +238,7 @@ textarea:focus, select:focus, input:focus {
 }
 
 .comments-header h4 {
-  color: var(--primary-color);
+  color: var(--dark-color);
   margin: 0;
 }
 
@@ -364,7 +257,6 @@ textarea:focus, select:focus, input:focus {
   position: relative;
   margin-left: 30px;
   border-left: 3px solid var(--primary-color);
-  color: var(--dark-color);
 }
 
 .comment:before {
@@ -423,20 +315,29 @@ textarea:focus, select:focus, input:focus {
   background: #357abd;
 }
 
-/* Ajustes para comentarios en modo oscuro */
-body.dark-mode .comment {
-  background: #2a2a2a;
-  color: #cccccc;  /* Texto un poco más oscuro para contraste */
-}
-body.dark-mode .comment:before {
-  background-color: #555;
-}
-
-/* Responsive */
 @media (max-width: 600px) {
   .form-fields {
     flex-direction: column;
     gap: 15px;
   }
+  
+  .post-form {
+    padding: 15px;
+  }
+  
+  .form-group {
+    min-width: 100%;
+  }
+  
+  .comment-form {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .comment-form button {
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    margin-bottom: 0;
+  }
 }
-
