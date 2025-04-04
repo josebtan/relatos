@@ -149,15 +149,15 @@ function formatTimeRemaining(milliseconds) {
   
   if (days > 0) {
     const remainingHours = totalHours % 24;
-    return ${days}d ${remainingHours}h;
+    return `${days}d ${remainingHours}h`;
   }
   if (totalHours > 0) {
     const remainingMinutes = totalMinutes % 60;
-    return ${totalHours}h ${remainingMinutes}m;
+    return `${totalHours}h ${remainingMinutes}m`;
   }
   
   const remainingSeconds = Math.floor((milliseconds % 60000) / 1000);
-  return ${totalMinutes}m ${remainingSeconds}s;
+  return `${totalMinutes}m ${remainingSeconds}s`;
 }
 
 /**
@@ -170,7 +170,7 @@ function updateCountdown() {
     const timeLeft = expiration - Date.now();
 
     if (timeLeft > 0) {
-      counter.textContent = ⏳ ${formatTimeRemaining(timeLeft)};
+      counter.textContent = `⏳ ${formatTimeRemaining(timeLeft)}`;
     } else {
       counter.textContent = "Expirado";
       const postElement = counter.closest(".post");
@@ -185,7 +185,7 @@ function updateCountdown() {
  * Manejo de votos: deshabilita los botones luego de votar y guarda el voto en localStorage.
  */
 async function handleVote(type, postId) {
-  const voteKey = vote-${postId};
+  const voteKey = `vote-${postId}`;
   const previousVote = localStorage.getItem(voteKey);
   if (previousVote) {
     alert("Ya has votado en esta publicación.");
@@ -204,8 +204,8 @@ async function handleVote(type, postId) {
     await updateDoc(postRef, updates);
     localStorage.setItem(voteKey, type);
     // Deshabilitar los botones de este post
-    document.getElementById(like-${postId}).disabled = true;
-    document.getElementById(dislike-${postId}).disabled = true;
+    document.getElementById(`like-${postId}`).disabled = true;
+    document.getElementById(`dislike-${postId}`).disabled = true;
   } catch (error) {
     console.error("Error al actualizar voto:", error);
   }
@@ -216,22 +216,22 @@ async function handleVote(type, postId) {
  * Si ya se votó, se deshabilitan al cargar.
  */
 function setupVotingButtons(postId) {
-  const voteKey = vote-${postId};
+  const voteKey = `vote-${postId}`;
   const previousVote = localStorage.getItem(voteKey);
   if (previousVote) {
-    document.getElementById(like-${postId}).disabled = true;
-    document.getElementById(dislike-${postId}).disabled = true;
+    document.getElementById(`like-${postId}`).disabled = true;
+    document.getElementById(`dislike-${postId}`).disabled = true;
   }
   
-  document.getElementById(like-${postId}).addEventListener("click", () => handleVote("like", postId));
-  document.getElementById(dislike-${postId}).addEventListener("click", () => handleVote("dislike", postId));
+  document.getElementById(`like-${postId}`).addEventListener("click", () => handleVote("like", postId));
+  document.getElementById(`dislike-${postId}`).addEventListener("click", () => handleVote("dislike", postId));
 }
 
 /**
  * Sistema de comentarios.
  */
 window.submitComment = async function(postId) {
-  const commentInput = document.getElementById(comment-input-${postId});
+  const commentInput = document.getElementById(`comment-input-${postId}`);
   const commentText = commentInput.value.trim();
   
   if (commentText === "") {
@@ -265,16 +265,16 @@ window.submitComment = async function(postId) {
 };
 
 function renderComments(postId, comments) {
-  const commentsContainer = document.getElementById(comments-${postId});
+  const commentsContainer = document.getElementById(`comments-${postId}`);
   if (!commentsContainer) return;
   
   commentsContainer.innerHTML = comments.map(comment => 
-    <div class="comment">
+    `<div class="comment">
       <div class="comment-content">${decryptMessage(comment.texto)}</div>
       <div class="comment-footer">
         <small>${comment.timestamp?.toDate().toLocaleString() || 'Ahora'}</small>
       </div>
-    </div>
+    </div>`
   ).join("");
 }
 
@@ -336,7 +336,7 @@ async function loadPosts(loadMore = false) {
         const postDiv = document.createElement("div");
         postDiv.className = "post";
         postDiv.innerHTML = 
-          <div class="post-header">
+          `<div class="post-header">
             <span class="post-id">ID: ${docSnap.id}</span>
             <span>Edad: ${data.edad || "N/A"}</span>
             <span>Sexo: ${data.sexo}</span>
@@ -362,8 +362,7 @@ async function loadPosts(loadMore = false) {
               ></textarea>
               <button onclick="submitComment('${docSnap.id}')">Comentar</button>
             </div>
-          </div>
-        ;
+          </div>`;
         postsContainer.appendChild(postDiv);
         setTimeout(() => postDiv.classList.add('post-visible'), 50);
         setupVotingButtons(docSnap.id);
@@ -373,11 +372,10 @@ async function loadPosts(loadMore = false) {
     
     if (!loadMore && postsRendered === 0) {
       postsContainer.innerHTML = 
-        <div class="no-posts-message">
+        `<div class="no-posts-message">
           No hay relatos para mostrar, ¡compártenos el tuyo!
           <button id="publish-now-btn" class="submit-btn">Publicar ahora</button>
-        </div>
-      ;
+        </div>`;
       document.getElementById("publish-now-btn").addEventListener("click", () => {
         messageInput.focus();
       });
