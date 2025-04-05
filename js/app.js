@@ -1,6 +1,7 @@
 import { app, db } from './firebase/config.js';
 import { submitPost, loadPosts, handleScroll } from './modules/posts.js';
 import { setupCharCounter, showAlert, getElement } from './modules/utils.js';
+import { setupDarkMode } from './modules/dark-mode.js';
 
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', async () => {
@@ -17,6 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Configurar scroll infinito
     window.addEventListener('scroll', handleScroll);
+
+    // Configurar modo oscuro
+    setupDarkMode();
 
     // Cargar publicaciones iniciales
     await loadPosts();
