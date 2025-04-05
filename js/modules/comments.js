@@ -8,9 +8,11 @@ import {
   updateDoc,
   doc,
   increment,
-  serverTimestamp
+  serverTimestamp,
+  getDoc
 } from '../firebase/config.js';
 import { encryptMessage, decryptMessage } from './encryption.js';
+import { showAlert, escapeHtml } from './utils.js';
 
 /**
  * Envía un nuevo comentario a la publicación
@@ -19,6 +21,7 @@ import { encryptMessage, decryptMessage } from './encryption.js';
  */
 export async function submitComment(postId, commentText) {
   if (!commentText.trim()) {
+    showAlert("El comentario no puede estar vacío", "error");
     throw new Error("El comentario no puede estar vacío");
   }
 
@@ -27,12 +30,13 @@ export async function submitComment(postId, commentText) {
     const postSnap = await getDoc(postRef);
     
     if (!postSnap.exists()) {
+      showAlert("La publicación no existe", "error");
       throw new Error("La publicación no existe");
     }
 
+    console.log("Publicando comentario para post:", postId);
     const encryptedComment = encryptMessage(commentText);
     
-    // Transacción para agregar comentario y actualizar contador
     await Promise.all([
       addDoc(collection(db, "mensajes", postId, "comentarios"), {
         texto: encryptedComment,
@@ -43,8 +47,16 @@ export async function submitComment(postId, commentText) {
       })
     ]);
 
+    console.log("Comentario publicado exitosamente");
+    showAlert("Comentario publicado con éxito", "success");
+    
   } catch (error) {
-    console.error("Error al comentar:", error);
+    console.error("Error al publicar comentario:", {
+      postId,
+      error: error.message,
+      stack: error.stack
+    });
+    showAlert(`Error al publicar: ${error.message}`, "error");
     throw error;
   }
 }
@@ -56,11 +68,21 @@ export async function submitComment(postId, commentText) {
  */
 export function renderComments(postId, comments) {
   const commentsContainer = document.getElementById(`comments-${postId}`);
-  if (!commentsContainer) return;
+  if (!commentsContainer) {
+    console.error(`Contenedor de comentarios no encontrado para post ${postId}`);
+    return;
+  }
 
+  console.log(`Renderizando ${comments.length} comentarios para post ${postId}`);
+  
   commentsContainer.innerHTML = comments
     .map(comment => createCommentElement(comment))
     .join("");
+
+  // Scroll al último comentario
+  if (comments.length > 0) {
+    commentsContainer.scrollTop = commentsContainer.scrollHeight;
+  }
 }
 
 /**
@@ -69,17 +91,26 @@ export function renderComments(postId, comments) {
  * @returns {string} - HTML del comentario
  */
 function createCommentElement(comment) {
-  const decryptedText = decryptMessage(comment.texto);
-  const timestamp = comment.timestamp?.toDate() || new Date();
-  
-  return `
-    <div class="comment">
-      <div class="comment-content">${escapeHtml(decryptedText)}</div>
-      <div class="comment-footer">
-        <small>${formatDate(timestamp)}</small>
+  try {
+    const decryptedText = decryptMessage(comment.texto);
+    const timestamp = comment.timestamp?.toDate() || new Date();
+    
+    return `
+      <div class="comment" data-id="${comment.id}">
+        <div class="comment-content">${escapeHtml(decryptedText)}</div>
+        <div class="comment-footer">
+          <small>${formatDate(timestamp)}</small>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+  } catch (error) {
+    console.error("Error al crear elemento de comentario:", error);
+    return `
+      <div class="comment error">
+        <div class="comment-content">Error al cargar este comentario</div>
+      </div>
+    `;
+  }
 }
 
 /**
@@ -87,22 +118,40 @@ function createCommentElement(comment) {
  * @param {DocumentSnapshot} postSnapshot - Snapshots de publicaciones
  */
 export function setupCommentsListeners(postSnapshot) {
+  const unsubscribes = [];
+  
   postSnapshot.forEach((docSnap) => {
     const commentsQuery = query(
       collection(db, "mensajes", docSnap.id, "comentarios"),
       orderBy("timestamp", "asc")
     );
     
-    const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
-      const comments = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      renderComments(docSnap.id, comments);
-    });
+    const unsubscribe = onSnapshot(
+      commentsQuery, 
+      (snapshot) => {
+        console.log(`Actualización de comentarios para post ${docSnap.id}`);
+        const comments = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        renderComments(docSnap.id, comments);
+      },
+      (error) => {
+        console.error("Error en listener de comentarios:", {
+          postId: docSnap.id,
+          error: error.message
+        });
+      }
+    );
 
-    return unsubscribe;
+    unsubscribes.push(unsubscribe);
   });
+
+  // Devuelve función para limpiar todos los listeners
+  return () => {
+    console.log("Limpiando listeners de comentarios");
+    unsubscribes.forEach(unsub => unsub());
+  };
 }
 
 /**
@@ -111,24 +160,18 @@ export function setupCommentsListeners(postSnapshot) {
  * @returns {string} - Fecha formateada
  */
 function formatDate(date) {
-  return date.toLocaleString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-/**
- * Escapa caracteres HTML para prevenir XSS
- * @param {string} text - Texto a escapar
- * @returns {string} - Texto seguro
- */
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  try {
+    return date.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error("Error al formatear fecha:", error);
+    return "Fecha desconocida";
+  }
 }
 
 /**
@@ -139,7 +182,10 @@ export function setupCommentForm(postId) {
   const form = document.querySelector(`#comment-form-${postId}`);
   const textarea = document.querySelector(`#comment-input-${postId}`);
   
-  if (!form || !textarea) return;
+  if (!form || !textarea) {
+    console.error(`Formulario no encontrado para post ${postId}`);
+    return;
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -147,7 +193,7 @@ export function setupCommentForm(postId) {
       await submitComment(postId, textarea.value);
       textarea.value = '';
     } catch (error) {
-      alert('Error al publicar comentario: ' + error.message);
+      console.error("Error en submit del formulario:", error);
     }
   });
 }
