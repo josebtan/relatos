@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   getDoc
 } from '../firebase/config.js';
+
 import { encryptMessage, decryptMessage } from './encryption.js';
 import { showAlert, escapeHtml } from './utils.js';
 
