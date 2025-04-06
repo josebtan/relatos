@@ -1,4 +1,4 @@
-import {
+import { 
   db,
   collection,
   addDoc,
@@ -11,159 +11,87 @@ import {
   serverTimestamp,
   getDoc
 } from '../firebase/config.js';
-
 import { encryptMessage, decryptMessage } from './encryption.js';
-import { showAlert, escapeHtml } from './utils.js';
+import { escapeHtml, formatDate } from './utils.js';
 
-/**
- * Envía un nuevo comentario a la publicación
- */
+// Variable para controlar listeners activos
+const activeListeners = new Map();
+
 export async function submitComment(postId, commentText) {
   if (!commentText.trim()) {
-    showAlert("El comentario no puede estar vacío", "error");
-    return;
+    throw new Error("El comentario no puede estar vacío");
   }
 
   try {
     const postRef = doc(db, "mensajes", postId);
     const postSnap = await getDoc(postRef);
-
+    
     if (!postSnap.exists()) {
-      showAlert("La publicación no existe", "error");
-      return;
+      throw new Error("La publicación no existe");
     }
 
     const encryptedComment = encryptMessage(commentText);
+    
+    await addDoc(collection(db, "mensajes", postId, "comentarios"), {
+      texto: encryptedComment,
+      timestamp: serverTimestamp()
+    });
 
-    await Promise.all([
-      addDoc(collection(db, "mensajes", postId, "comentarios"), {
-        texto: encryptedComment,
-        timestamp: serverTimestamp()
-      }),
-      updateDoc(postRef, {
-        commentCount: increment(1)
-      })
-    ]);
-
-    showAlert("Comentario publicado con éxito", "success");
+    // Actualizar contador de comentarios
+    await updateDoc(postRef, {
+      commentCount: increment(1)
+    });
 
   } catch (error) {
-    console.error("Error al publicar comentario:", error);
-    showAlert(`Error al publicar: ${error.message}`, "error");
+    console.error("Error al comentar:", error);
+    throw error;
   }
 }
 
-/**
- * Renderiza los comentarios de una publicación
- */
 export function renderComments(postId, comments) {
-  const container = document.getElementById(`comments-${postId}`);
-  if (!container) {
-    console.error(`No se encontró el contenedor de comentarios para ${postId}`);
-    return;
-  }
+  const commentsContainer = document.getElementById(`comments-${postId}`);
+  if (!commentsContainer) return;
 
-  container.innerHTML = "";
-
-  comments.forEach(comment => {
-    const commentEl = createCommentElement(comment);
-    if (commentEl) container.appendChild(commentEl);
-  });
-
-  container.scrollTop = container.scrollHeight;
+  commentsContainer.innerHTML = comments
+    .map(comment => createCommentElement(comment))
+    .join("");
 }
 
-/**
- * Crea el elemento visual para un comentario
- */
 function createCommentElement(comment) {
-  let decryptedText;
-  try {
-    decryptedText = decryptMessage(comment.texto);
-  } catch (err) {
-    console.error("Error desencriptando comentario:", err);
-    decryptedText = "Comentario ilegible";
-  }
-
+  const decryptedText = decryptMessage(comment.texto);
   const timestamp = comment.timestamp?.toDate() || new Date();
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "comment";
-  wrapper.dataset.id = comment.id;
-
-  wrapper.innerHTML = `
-    <div class="comment-content">${escapeHtml(decryptedText)}</div>
-    <div class="comment-footer">
-      <small>${formatDate(timestamp)}</small>
+  
+  return `
+    <div class="comment">
+      <div class="comment-content">${escapeHtml(decryptedText)}</div>
+      <div class="comment-footer">
+        <small>${formatDate(timestamp)}</small>
+      </div>
     </div>
   `;
-
-  return wrapper;
 }
 
-/**
- * Listener de comentarios por publicación
- */
 export function setupCommentsListeners(postSnapshot) {
-  const unsubscribes = [];
+  // Limpiar listeners anteriores
+  activeListeners.forEach((unsubscribe, postId) => {
+    unsubscribe();
+    activeListeners.delete(postId);
+  });
 
   postSnapshot.forEach((docSnap) => {
-    const q = query(
+    const commentsQuery = query(
       collection(db, "mensajes", docSnap.id, "comentarios"),
       orderBy("timestamp", "asc")
     );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
       const comments = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       renderComments(docSnap.id, comments);
-    }, (error) => {
-      console.error(`Error en listener de comentarios para ${docSnap.id}:`, error);
     });
 
-    unsubscribes.push(unsubscribe);
-  });
-
-  return () => {
-    unsubscribes.forEach(unsub => unsub());
-  };
-}
-
-/**
- * Formatea fecha legible
- */
-function formatDate(date) {
-  try {
-    return date.toLocaleString("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    });
-  } catch (err) {
-    console.error("Error al formatear fecha:", err);
-    return "Fecha inválida";
-  }
-}
-
-/**
- * Configura el formulario de comentarios
- */
-export function setupCommentForm(postId) {
-  const form = document.querySelector(`#comment-form-${postId}`);
-  const input = document.querySelector(`#comment-input-${postId}`);
-
-  if (!form || !input) {
-    console.warn(`Formulario de comentarios no encontrado para post ${postId}`);
-    return;
-  }
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    await submitComment(postId, input.value);
-    input.value = "";
+    activeListeners.set(docSnap.id, unsubscribe);
   });
 }
