@@ -164,7 +164,7 @@ function renderPost(docSnap, container) {
           placeholder="Escribe un comentario..."
           maxlength="500"
         ></textarea>
-        <button onclick="submitComment('${docSnap.id}')">Comentar</button>
+        button onclick="handleSubmitComment('${docSnap.id}')">Comentar</button>
       </div>
     </div>
   `;
