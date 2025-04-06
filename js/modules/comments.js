@@ -1,4 +1,4 @@
-import { 
+import {
   db,
   collection,
   addDoc,
@@ -17,27 +17,24 @@ import { showAlert, escapeHtml } from './utils.js';
 
 /**
  * Envía un nuevo comentario a la publicación
- * @param {string} postId - ID de la publicación padre
- * @param {string} commentText - Texto del comentario
  */
 export async function submitComment(postId, commentText) {
   if (!commentText.trim()) {
     showAlert("El comentario no puede estar vacío", "error");
-    throw new Error("El comentario no puede estar vacío");
+    return;
   }
 
   try {
     const postRef = doc(db, "mensajes", postId);
     const postSnap = await getDoc(postRef);
-    
+
     if (!postSnap.exists()) {
       showAlert("La publicación no existe", "error");
-      throw new Error("La publicación no existe");
+      return;
     }
 
-    console.log("Publicando comentario para post:", postId);
     const encryptedComment = encryptMessage(commentText);
-    
+
     await Promise.all([
       addDoc(collection(db, "mensajes", postId, "comentarios"), {
         texto: encryptedComment,
@@ -48,153 +45,125 @@ export async function submitComment(postId, commentText) {
       })
     ]);
 
-    console.log("Comentario publicado exitosamente");
     showAlert("Comentario publicado con éxito", "success");
-    
+
   } catch (error) {
-    console.error("Error al publicar comentario:", {
-      postId,
-      error: error.message,
-      stack: error.stack
-    });
+    console.error("Error al publicar comentario:", error);
     showAlert(`Error al publicar: ${error.message}`, "error");
-    throw error;
   }
 }
 
 /**
- * Renderiza los comentarios en el DOM
- * @param {string} postId - ID de la publicación
- * @param {Array} comments - Lista de comentarios
+ * Renderiza los comentarios de una publicación
  */
 export function renderComments(postId, comments) {
-  const commentsContainer = document.getElementById(`comments-${postId}`);
-  if (!commentsContainer) {
-    console.error(`Contenedor de comentarios no encontrado para post ${postId}`);
+  const container = document.getElementById(`comments-${postId}`);
+  if (!container) {
+    console.error(`No se encontró el contenedor de comentarios para ${postId}`);
     return;
   }
 
-  console.log(`Renderizando ${comments.length} comentarios para post ${postId}`);
-  
-  commentsContainer.innerHTML = comments
-    .map(comment => createCommentElement(comment))
-    .join("");
+  container.innerHTML = "";
 
-  // Scroll al último comentario
-  if (comments.length > 0) {
-    commentsContainer.scrollTop = commentsContainer.scrollHeight;
-  }
+  comments.forEach(comment => {
+    const commentEl = createCommentElement(comment);
+    if (commentEl) container.appendChild(commentEl);
+  });
+
+  container.scrollTop = container.scrollHeight;
 }
 
 /**
- * Crea el HTML para un comentario individual
- * @param {Object} comment - Datos del comentario
- * @returns {string} - HTML del comentario
+ * Crea el elemento visual para un comentario
  */
 function createCommentElement(comment) {
+  let decryptedText;
   try {
-    const decryptedText = decryptMessage(comment.texto);
-    const timestamp = comment.timestamp?.toDate() || new Date();
-    
-    return `
-      <div class="comment" data-id="${comment.id}">
-        <div class="comment-content">${escapeHtml(decryptedText)}</div>
-        <div class="comment-footer">
-          <small>${formatDate(timestamp)}</small>
-        </div>
-      </div>
-    `;
-  } catch (error) {
-    console.error("Error al crear elemento de comentario:", error);
-    return `
-      <div class="comment error">
-        <div class="comment-content">Error al cargar este comentario</div>
-      </div>
-    `;
+    decryptedText = decryptMessage(comment.texto);
+  } catch (err) {
+    console.error("Error desencriptando comentario:", err);
+    decryptedText = "Comentario ilegible";
   }
+
+  const timestamp = comment.timestamp?.toDate() || new Date();
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "comment";
+  wrapper.dataset.id = comment.id;
+
+  wrapper.innerHTML = `
+    <div class="comment-content">${escapeHtml(decryptedText)}</div>
+    <div class="comment-footer">
+      <small>${formatDate(timestamp)}</small>
+    </div>
+  `;
+
+  return wrapper;
 }
 
 /**
- * Configura listeners para los comentarios de una publicación
- * @param {DocumentSnapshot} postSnapshot - Snapshots de publicaciones
+ * Listener de comentarios por publicación
  */
 export function setupCommentsListeners(postSnapshot) {
   const unsubscribes = [];
-  
+
   postSnapshot.forEach((docSnap) => {
-    const commentsQuery = query(
+    const q = query(
       collection(db, "mensajes", docSnap.id, "comentarios"),
       orderBy("timestamp", "asc")
     );
-    
-    const unsubscribe = onSnapshot(
-      commentsQuery, 
-      (snapshot) => {
-        console.log(`Actualización de comentarios para post ${docSnap.id}`);
-        const comments = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        renderComments(docSnap.id, comments);
-      },
-      (error) => {
-        console.error("Error en listener de comentarios:", {
-          postId: docSnap.id,
-          error: error.message
-        });
-      }
-    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const comments = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      renderComments(docSnap.id, comments);
+    }, (error) => {
+      console.error(`Error en listener de comentarios para ${docSnap.id}:`, error);
+    });
 
     unsubscribes.push(unsubscribe);
   });
 
-  // Devuelve función para limpiar todos los listeners
   return () => {
-    console.log("Limpiando listeners de comentarios");
     unsubscribes.forEach(unsub => unsub());
   };
 }
 
 /**
- * Formatea la fecha para mostrarla
- * @param {Date} date - Fecha a formatear
- * @returns {string} - Fecha formateada
+ * Formatea fecha legible
  */
 function formatDate(date) {
   try {
-    return date.toLocaleString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
     });
-  } catch (error) {
-    console.error("Error al formatear fecha:", error);
-    return "Fecha desconocida";
+  } catch (err) {
+    console.error("Error al formatear fecha:", err);
+    return "Fecha inválida";
   }
 }
 
 /**
- * Configura el formulario de comentarios para una publicación
- * @param {string} postId - ID de la publicación
+ * Configura el formulario de comentarios
  */
 export function setupCommentForm(postId) {
   const form = document.querySelector(`#comment-form-${postId}`);
-  const textarea = document.querySelector(`#comment-input-${postId}`);
-  
-  if (!form || !textarea) {
-    console.error(`Formulario no encontrado para post ${postId}`);
+  const input = document.querySelector(`#comment-input-${postId}`);
+
+  if (!form || !input) {
+    console.warn(`Formulario de comentarios no encontrado para post ${postId}`);
     return;
   }
 
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    try {
-      await submitComment(postId, textarea.value);
-      textarea.value = '';
-    } catch (error) {
-      console.error("Error en submit del formulario:", error);
-    }
+    await submitComment(postId, input.value);
+    input.value = "";
   });
 }
