@@ -12,14 +12,18 @@ import {
   getDoc
 } from '../firebase/config.js';
 import { encryptMessage, decryptMessage } from './encryption.js';
-import { escapeHtml, formatDate } from './utils.js';
+import { formatDate } from './utils.js';
 
-// Variable para controlar listeners activos
-const activeListeners = new Map();
+// Almacén de funciones de desuscripción
+let commentUnsubscribes = new Map();
 
 export async function submitComment(postId, commentText) {
   if (!commentText.trim()) {
     throw new Error("El comentario no puede estar vacío");
+  }
+
+  if (commentText.length > 500) {
+    throw new Error("El comentario no puede exceder 500 caracteres");
   }
 
   try {
@@ -32,15 +36,15 @@ export async function submitComment(postId, commentText) {
 
     const encryptedComment = encryptMessage(commentText);
     
-    await addDoc(collection(db, "mensajes", postId, "comentarios"), {
-      texto: encryptedComment,
-      timestamp: serverTimestamp()
-    });
-
-    // Actualizar contador de comentarios
-    await updateDoc(postRef, {
-      commentCount: increment(1)
-    });
+    await Promise.all([
+      addDoc(collection(db, "mensajes", postId, "comentarios"), {
+        texto: encryptedComment,
+        timestamp: serverTimestamp()
+      }),
+      updateDoc(postRef, {
+        commentCount: increment(1)
+      })
+    ]);
 
   } catch (error) {
     console.error("Error al comentar:", error);
@@ -52,9 +56,12 @@ export function renderComments(postId, comments) {
   const commentsContainer = document.getElementById(`comments-${postId}`);
   if (!commentsContainer) return;
 
-  commentsContainer.innerHTML = comments
-    .map(comment => createCommentElement(comment))
-    .join("");
+  // Optimización: Solo actualizar si hay cambios
+  if (comments.length !== commentsContainer.children.length) {
+    commentsContainer.innerHTML = comments
+      .map(comment => createCommentElement(comment))
+      .join("");
+  }
 }
 
 function createCommentElement(comment) {
@@ -72,15 +79,13 @@ function createCommentElement(comment) {
 }
 
 export function setupCommentsListeners(postSnapshot) {
-  // Limpiar listeners anteriores
-  activeListeners.forEach((unsubscribe, postId) => {
-    unsubscribe();
-    activeListeners.delete(postId);
-  });
+  // Limpiar suscripciones anteriores
+  cleanupComments();
 
   postSnapshot.forEach((docSnap) => {
+    const postId = docSnap.id;
     const commentsQuery = query(
-      collection(db, "mensajes", docSnap.id, "comentarios"),
+      collection(db, "mensajes", postId, "comentarios"),
       orderBy("timestamp", "asc")
     );
     
@@ -89,9 +94,20 @@ export function setupCommentsListeners(postSnapshot) {
         id: doc.id,
         ...doc.data()
       }));
-      renderComments(docSnap.id, comments);
+      renderComments(postId, comments);
     });
 
-    activeListeners.set(docSnap.id, unsubscribe);
+    commentUnsubscribes.set(postId, unsubscribe);
   });
+}
+
+export function cleanupComments() {
+  commentUnsubscribes.forEach(unsub => unsub());
+  commentUnsubscribes.clear();
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
