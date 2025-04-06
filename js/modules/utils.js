@@ -74,7 +74,8 @@ export function formatFullDateTime(date) {
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   });
 }
 
@@ -98,6 +99,10 @@ export function escapeHtml(text) {
  * @param {number} [timeout=5000] - Tiempo en ms hasta ocultar (0 para permanente)
  */
 export function showAlert(message, type = 'info', timeout = 5000) {
+  // Eliminar alertas existentes primero
+  const existingAlerts = document.querySelectorAll('.alert');
+  existingAlerts.forEach(alert => alert.remove());
+
   const alert = document.createElement('div');
   alert.className = `alert alert-${type}`;
   alert.innerHTML = escapeHtml(message);
@@ -117,7 +122,9 @@ export function showAlert(message, type = 'info', timeout = 5000) {
     borderLeft: `4px solid ${
       type === 'error' ? '#c62828' : 
       type === 'success' ? '#2e7d32' : '#1565c0'
-    }`
+    }`,
+    maxWidth: '90%',
+    wordBreak: 'break-word'
   });
 
   document.body.appendChild(alert);
@@ -192,4 +199,32 @@ export function toggleElement(element, force) {
   
   const newState = force !== undefined ? force : element.style.display === 'none';
   element.style.display = newState ? '' : 'none';
+}
+
+/**
+ * Formatea fecha para comentarios (nueva función)
+ * @param {Date} date - Fecha a formatear
+ * @returns {string}
+ */
+export function formatDate(date) {
+  if (!(date instanceof Date)) {
+    date = date?.toDate?.() || new Date();
+  }
+
+  return date.toLocaleString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+/**
+ * Verifica si el modo oscuro está activo
+ * @returns {boolean}
+ */
+export function isDarkMode() {
+  return document.body.classList.contains('dark-mode');
 }
