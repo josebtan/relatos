@@ -48,7 +48,7 @@ export async function submitComment(postId, commentText) {
     ]);
 
     console.log("Comentario publicado exitosamente");
-    showAlert("Comentario publicado con éxito", "success");
+    
     
   } catch (error) {
     console.error("Error al publicar comentario:", {
@@ -73,7 +73,6 @@ export function renderComments(postId, comments) {
     return;
   }
 
-  console.log(`Renderizando ${comments.length} comentarios para post ${postId}`);
   
   commentsContainer.innerHTML = comments
     .map(comment => createCommentElement(comment))
@@ -129,7 +128,7 @@ export function setupCommentsListeners(postSnapshot) {
     const unsubscribe = onSnapshot(
       commentsQuery, 
       (snapshot) => {
-        console.log(`Actualización de comentarios para post ${docSnap.id}`);
+        
         const comments = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
