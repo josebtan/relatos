@@ -8,38 +8,54 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-  <div class="container">
-    <h1>Relatos Anonimos</h1>
-    
-    <div id="post-form" class="post-form">
-      <textarea 
-        id="message" 
-        placeholder="Comparte tu historia (máx. 1000 caracteres)"
-        maxlength="1000"
-      ></textarea>
-      <p id="char-count" class="char-count"></p>
+  <div class="main-wrapper">
+    <!-- Sidebar de filtros -->
+    <aside id="tag-filter" class="tag-filter">
+      <h3>Filtrar por Tema</h3>
+      <ul id="tag-list">
+        <!-- Se llenará dinámicamente -->
+      </ul>
+    </aside>
+
+    <!-- Contenido principal -->
+    <div class="container">
+      <h1>Relatos Anonimos</h1>
       
-      <div class="form-fields">
-        <div class="form-group">
-          <label for="age">Edad (opcional):</label>
-          <input type="number" id="age" min="13" max="99" placeholder="Ej: 25">
+      <div id="post-form" class="post-form">
+        <textarea
+          id="message"
+          placeholder="Comparte tu historia (máx. 1000 caracteres)"
+          maxlength="1000"
+        ></textarea>
+        <p id="char-count" class="char-count"></p>
+        
+        <div class="form-fields">
+          <div class="form-group">
+            <label for="age">Edad (opcional):</label>
+            <input type="number" id="age" min="13" max="99" placeholder="Ej: 25">
+          </div>
+          
+          <div class="form-group">
+            <label for="gender">Género:</label>
+            <select id="gender">
+              <option value="none">Prefiero no decir</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="tags">Temas (separados por coma):</label>
+            <input type="text" id="tags" placeholder="ej: amor, amistad">
+          </div>
         </div>
         
-        <div class="form-group">
-          <label for="gender">Género:</label>
-          <select id="gender">
-            <option value="none">Prefiero no decir</option>
-            <option value="masculino">Masculino</option>
-            <option value="femenino">Femenino</option>
-          </select>
-        </div>
+        <button id="submit-button" class="submit-btn">Publicar</button>
       </div>
       
-      <button id="submit-button" class="submit-btn">Publicar</button>
+      <h2>Últimas Publicaciones</h2>
+      <div id="posts" class="posts-container"></div>
     </div>
-    
-    <h2>Últimas Publicaciones</h2>
-    <div id="posts" class="posts-container"></div>
   </div>
 
   <!-- Botón de modo oscuro -->
