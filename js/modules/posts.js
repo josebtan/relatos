@@ -26,9 +26,28 @@ let loading = false;
 let hasMore = true;
 let currentFilterTag = 'all';
 let currentUnsubscribe = null;
+let postsListener = null;
 const initialLoadLimit = 15;
 const loadMoreLimit = 8;
 const tagsSet = new Set();
+const loadedPostIds = new Set();
+
+/**
+ * Limpia los listeners y estado actual
+ */
+function cleanup() {
+  if (currentUnsubscribe) {
+    currentUnsubscribe();
+    currentUnsubscribe = null;
+  }
+  if (postsListener) {
+    postsListener();
+    postsListener = null;
+  }
+  loadedPostIds.clear();
+  tagsSet.clear();
+  lastVisible = null;
+}
 
 /**
  * Publica un nuevo mensaje en la base de datos, incluyendo tags
@@ -66,20 +85,19 @@ export async function submitPost(messageInput, age, gender, tags) {
  * Carga publicaciones, con opción de filtrado por tag
  */
 export async function loadPosts(loadMore = false, filterTag = 'all') {
-  // Si cambiamos filtro, desconectamos listener previo
-  if (currentUnsubscribe && (!loadMore || filterTag !== currentFilterTag)) {
-    currentUnsubscribe();
-    lastVisible = null;
-    hasMore = true;
-    tagsSet.clear();
+  // Si cambiamos filtro, limpiamos todo
+  if (filterTag !== currentFilterTag) {
+    cleanup();
+    currentFilterTag = filterTag;
   }
-  currentFilterTag = filterTag;
+  
   if (loading || !hasMore) return;
   loading = true;
 
   try {
     const base = collection(db, 'mensajes');
     let q;
+    
     if (filterTag !== 'all') {
       q = query(
         base,
@@ -102,24 +120,42 @@ export async function loadPosts(loadMore = false, filterTag = 'all') {
       );
     }
 
-    const unsubscribe = onSnapshot(q, snapshot => {
+    // Limpiar container solo si no es carga adicional
+    if (!loadMore) {
+      getElement('#posts').innerHTML = '';
+      loadedPostIds.clear();
+    }
+
+    // Cancelar listener anterior si existe
+    if (postsListener) {
+      postsListener();
+    }
+
+    postsListener = onSnapshot(q, snapshot => {
       const container = getElement('#posts');
-      if (!loadMore || filterTag !== 'all') container.innerHTML = '';
+      let newPostsAdded = false;
 
       snapshot.forEach(docSnap => {
-        renderPost(docSnap, container);
-        // Acumular tags para el filtro
-        const data = docSnap.data();
-        (data.tags || []).forEach(t => tagsSet.add(t));
+        // Verificar si el post ya fue cargado
+        if (!loadedPostIds.has(docSnap.id)) {
+          renderPost(docSnap, container);
+          loadedPostIds.add(docSnap.id);
+          newPostsAdded = true;
+          
+          // Acumular tags para el filtro
+          const data = docSnap.data();
+          (data.tags || []).forEach(t => tagsSet.add(t));
+        }
       });
 
-      lastVisible = snapshot.docs[snapshot.docs.length - 1];
-      hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
-      setupCommentsListeners(snapshot);
-      renderTagFilter();
+      if (newPostsAdded) {
+        lastVisible = snapshot.docs[snapshot.docs.length - 1];
+        hasMore = snapshot.docs.length >= (loadMore ? loadMoreLimit : initialLoadLimit);
+        setupCommentsListeners(snapshot);
+        renderTagFilter();
+      }
     });
 
-    currentUnsubscribe = unsubscribe;
   } finally {
     loading = false;
   }
