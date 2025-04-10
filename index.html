@@ -3,14 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relatos Anonimos</title>
+  <title>Relatos Anónimos</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-content">
+      <h1>Relatos Anónimos</h1>
+      <p class="tagline">Comparte tus historias sin revelar tu identidad</p>
+    </div>
+  </header>
+
   <div class="main-wrapper">
-    <!-- Sidebar de filtros -->
-    <aside id="tag-filter" class="tag-filter">
+    <!-- Sidebar izquierdo - Filtros -->
+    <aside id="tag-filter" class="sidebar left-sidebar">
       <h3>Filtrar por Tema</h3>
       <ul id="tag-list">
         <!-- Se llenará dinámicamente -->
@@ -18,9 +26,7 @@
     </aside>
 
     <!-- Contenido principal -->
-    <div class="container">
-      <h1>Relatos Anonimos</h1>
-      
+    <div class="main-content">
       <div id="post-form" class="post-form">
         <textarea
           id="message"
@@ -53,10 +59,43 @@
         <button id="submit-button" class="submit-btn">Publicar</button>
       </div>
       
-      <h2>Últimas Publicaciones</h2>
+      <h2 class="section-title">Últimas Publicaciones</h2>
       <div id="posts" class="posts-container"></div>
     </div>
+
+    <!-- Sidebar derecho - Futuro contenido -->
+    <aside class="sidebar right-sidebar">
+      <h3>Espacio Futuro</h3>
+      <div class="placeholder-content">
+        <p>Aquí se agregará contenido adicional en el futuro</p>
+      </div>
+    </aside>
   </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h3>Relatos Anónimos</h3>
+        <p>Un espacio seguro para compartir tus historias</p>
+      </div>
+      <div class="footer-section">
+        <h3>Normas</h3>
+        <ul>
+          <li>Respeto a todos los usuarios</li>
+          <li>Contenido apropiado</li>
+          <li>Anonimato garantizado</li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Contacto</h3>
+        <p>info@relatosanonimos.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2023 Relatos Anónimos. Todos los derechos reservados.</p>
+    </div>
+  </footer>
 
   <!-- Botón de modo oscuro -->
   <button id="dark-mode-toggle" class="dark-mode-btn">
