@@ -18,7 +18,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     getElement('#submit-button').addEventListener('click', handleSubmit);
     window.addEventListener('scroll', handleScroll);
     setupSidebarToggles();
-    setupSwipeGestures();
 
     await loadPosts(false, 'all');
     restoreVoteStates();
@@ -57,50 +56,23 @@ async function handleSubmit() {
 }
 
 function setupSidebarToggles() {
-  const leftToggle = document.createElement('button');
-  leftToggle.className = 'sidebar-toggle left-sidebar-toggle';
-  leftToggle.innerHTML = '🔍';
-  leftToggle.title = 'Mostrar filtros';
-  document.body.appendChild(leftToggle);
-
-  const rightToggle = document.createElement('button');
-  rightToggle.className = 'sidebar-toggle right-sidebar-toggle';
-  rightToggle.innerHTML = '⚙️';
-  rightToggle.title = 'Mostrar opciones';
-  document.body.appendChild(rightToggle);
-
   const overlay = document.createElement('div');
   overlay.className = 'sidebar-overlay';
   document.body.appendChild(overlay);
 
-  leftToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.querySelector('.left-sidebar').classList.toggle('active');
-    overlay.classList.toggle('active');
-  });
-
-  rightToggle.addEventListener('click', (e) => {
-    e.stopPropagation();
-    document.querySelector('.right-sidebar').classList.toggle('active');
-    overlay.classList.toggle('active');
-  });
-
   overlay.addEventListener('click', () => {
-    document.querySelector('.left-sidebar').classList.remove('active');
-    document.querySelector('.right-sidebar').classList.remove('active');
-    overlay.classList.remove('active');
+    closeSidebars();
   });
 
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.sidebar') && !e.target.closest('.sidebar-toggle')) {
-      document.querySelector('.left-sidebar').classList.remove('active');
-      document.querySelector('.right-sidebar').classList.remove('active');
-      overlay.classList.remove('active');
+    if (!e.target.closest('.sidebar')) {
+      closeSidebars();
     }
   });
+
+  setupSwipeGestures();
 }
 
-window.submitComment = submitComment;
 function setupSwipeGestures() {
   let touchStartX = 0;
   let touchEndX = 0;
@@ -115,21 +87,50 @@ function setupSwipeGestures() {
   });
 
   function handleSwipeGesture() {
-    const deltaX = touchEndX - touchStartX;
-    const threshold = 80; // px mínimo para considerar como swipe
+  const deltaX = touchEndX - touchStartX;
+  const threshold = 80;
 
-    const leftSidebar = document.querySelector('.left-sidebar');
-    const rightSidebar = document.querySelector('.right-sidebar');
-    const overlay = document.querySelector('.sidebar-overlay');
+  const leftSidebar = document.querySelector('.left-sidebar');
+  const rightSidebar = document.querySelector('.right-sidebar');
+  const overlay = document.querySelector('.sidebar-overlay');
 
-    if (deltaX > threshold) {
-      // Deslizó hacia la derecha → abrir filtros
+  const leftOpen = leftSidebar.classList.contains('active');
+  const rightOpen = rightSidebar.classList.contains('active');
+
+  if (deltaX > threshold) {
+    // ↔️ Deslizó a la derecha
+
+    if (rightOpen) {
+      // Si el derecho está abierto, lo cerramos
+      rightSidebar.classList.remove('active');
+      overlay.classList.remove('active');
+    } else if (!leftOpen && !rightOpen) {
+      // Solo abrimos el izquierdo si ambos están cerrados
       leftSidebar.classList.add('active');
       overlay.classList.add('active');
-    } else if (deltaX < -threshold) {
-      // Deslizó hacia la izquierda → abrir opciones
+    }
+
+  } else if (deltaX < -threshold) {
+    // ↔️ Deslizó a la izquierda
+
+    if (leftOpen) {
+      // Si el izquierdo está abierto, lo cerramos
+      leftSidebar.classList.remove('active');
+      overlay.classList.remove('active');
+    } else if (!leftOpen && !rightOpen) {
+      // Solo abrimos el derecho si ambos están cerrados
       rightSidebar.classList.add('active');
       overlay.classList.add('active');
     }
   }
 }
+
+}
+
+function closeSidebars() {
+  document.querySelector('.left-sidebar').classList.remove('active');
+  document.querySelector('.right-sidebar').classList.remove('active');
+  document.querySelector('.sidebar-overlay').classList.remove('active');
+}
+
+window.submitComment = submitComment;
