@@ -54,15 +54,18 @@ export async function submitComment(postId) {
 }
 
 export function renderComments(postId, comments) {
-  const commentsContainer = document.getElementById(`comments-${postId}`);
-  if (!commentsContainer) return;
+  const container = document.getElementById(`comments-${postId}`);
+  if (!container) return;
 
-  commentsContainer.innerHTML = comments
-    .map(comment => createCommentElement(comment))
-    .join("");
+  container.innerHTML = comments.map(createCommentElement).join("");
+
+  const countElement = document.querySelector(`#comment-count-${postId}`);
+  if (countElement) {
+    countElement.textContent = comments.length;
+  }
 
   if (comments.length > 0) {
-    commentsContainer.scrollTop = commentsContainer.scrollHeight;
+    container.scrollTop = container.scrollHeight;
   }
 }
 
@@ -97,9 +100,9 @@ export function setupCommentsListeners(postSnapshot) {
       collection(db, "mensajes", docSnap.id, "comentarios"),
       orderBy("timestamp", "asc")
     );
-    
+
     const unsubscribe = onSnapshot(
-      commentsQuery, 
+      commentsQuery,
       (snapshot) => {
         const comments = snapshot.docs.map(doc => ({
           id: doc.id,
@@ -120,7 +123,18 @@ export function setupCommentsListeners(postSnapshot) {
 
 export function setupCommentForm(postId) {
   const form = document.querySelector(`#comment-form-${postId}`);
-  if (!form) return;
+  const toggleBtn = document.querySelector(`#toggle-comments-${postId}`);
+  const commentsContainer = document.querySelector(`#comments-${postId}`);
+  if (!form || !toggleBtn || !commentsContainer) return;
+
+  // Toggle de colapsar comentarios
+  toggleBtn.addEventListener('click', () => {
+    commentsContainer.classList.toggle('hidden');
+    form.classList.toggle('hidden');
+    toggleBtn.textContent = commentsContainer.classList.contains('hidden')
+      ? 'Mostrar comentarios'
+      : 'Ocultar comentarios';
+  });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
