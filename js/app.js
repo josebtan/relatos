@@ -1,12 +1,14 @@
 import { app, db } from './firebase/config.js';
 import { submitPost, loadPosts, handleScroll } from './modules/posts.js';
-import { setupCharCounter, showAlert, getElement, toggleElement } from './modules/utils.js';
+import { setupCharCounter, showAlert, getElement } from './modules/utils.js';
 import { setupDarkMode } from './modules/dark-mode.js';
 import { submitComment } from './modules/comments.js';
+import { initVotingSystem, restoreVoteStates } from './modules/votes.js';
 
-// Iniciar aplicación
 window.addEventListener('DOMContentLoaded', async () => {
   try {
+    initVotingSystem();
+    setupDarkMode();
     setupCharCounter(
       getElement('#message'),
       getElement('#char-count'),
@@ -15,20 +17,24 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     getElement('#submit-button').addEventListener('click', handleSubmit);
     window.addEventListener('scroll', handleScroll);
-    setupDarkMode();
-
-    // Configurar botones para mostrar/ocultar sidebars
     setupSidebarToggles();
+    setupSwipeGestures();
 
-    // Carga inicial sin filtro
     await loadPosts(false, 'all');
+    restoreVoteStates();
+
   } catch (err) {
-    showAlert(`Error de inicialización: ${err.message}`, 'error');
+    console.error("Error en inicialización:", err);
+    showAlert(`Error al iniciar la aplicación: ${err.message}`, 'error');
   }
 });
 
 async function handleSubmit() {
+  const submitBtn = getElement('#submit-button');
   try {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Publicando...';
+
     const messageInput = getElement('#message');
     const age = getElement('#age').value.trim();
     const gender = getElement('#gender').value;
@@ -39,14 +45,17 @@ async function handleSubmit() {
 
     await submitPost(messageInput, age, gender, tags);
     showAlert('Publicación creada exitosamente!', 'success');
+    messageInput.value = '';
+    getElement('#tags').value = '';
   } catch (err) {
+    console.error("Error al publicar:", err);
     showAlert(err.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Publicar';
   }
 }
 
-/**
- * Configura los botones para mostrar/ocultar los sidebars en móvil
- */
 function setupSidebarToggles() {
   const leftToggle = document.createElement('button');
   leftToggle.className = 'sidebar-toggle left-sidebar-toggle';
@@ -64,7 +73,6 @@ function setupSidebarToggles() {
   overlay.className = 'sidebar-overlay';
   document.body.appendChild(overlay);
 
-  // Mostrar/ocultar sidebars
   leftToggle.addEventListener('click', (e) => {
     e.stopPropagation();
     document.querySelector('.left-sidebar').classList.toggle('active');
@@ -77,14 +85,12 @@ function setupSidebarToggles() {
     overlay.classList.toggle('active');
   });
 
-  // Cerrar sidebars al hacer clic en el overlay
   overlay.addEventListener('click', () => {
     document.querySelector('.left-sidebar').classList.remove('active');
     document.querySelector('.right-sidebar').classList.remove('active');
     overlay.classList.remove('active');
   });
 
-  // Cerrar sidebars al hacer clic fuera
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.sidebar') && !e.target.closest('.sidebar-toggle')) {
       document.querySelector('.left-sidebar').classList.remove('active');
@@ -94,5 +100,36 @@ function setupSidebarToggles() {
   });
 }
 
-// Hacer submitComment accesible globalmente para los botones en los posts
 window.submitComment = submitComment;
+function setupSwipeGestures() {
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+
+  document.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipeGesture();
+  });
+
+  function handleSwipeGesture() {
+    const deltaX = touchEndX - touchStartX;
+    const threshold = 80; // px mínimo para considerar como swipe
+
+    const leftSidebar = document.querySelector('.left-sidebar');
+    const rightSidebar = document.querySelector('.right-sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    if (deltaX > threshold) {
+      // Deslizó hacia la derecha → abrir filtros
+      leftSidebar.classList.add('active');
+      overlay.classList.add('active');
+    } else if (deltaX < -threshold) {
+      // Deslizó hacia la izquierda → abrir opciones
+      rightSidebar.classList.add('active');
+      overlay.classList.add('active');
+    }
+  }
+}
