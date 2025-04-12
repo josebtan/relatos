@@ -1,5 +1,3 @@
-// js/modules/posts.js
-
 import { 
   db,
   collection,
@@ -16,11 +14,10 @@ import {
   where
 } from '../firebase/config.js';
 import { encryptMessage, decryptMessage } from './encryption.js';
-import { setupVotingButtons } from './votes.js';
-import { setupCommentsListeners } from './comments.js';
+import { handleVote, updateButtonStates } from './votes.js';
+import { setupCommentsListeners, setupCommentForm } from './comments.js';
 import { formatSmartDate, formatFullDateTime, getElement, showAlert } from './utils.js';
 
-// Estado global
 let lastVisible = null;
 let loading = false;
 let hasMore = true;
@@ -32,26 +29,14 @@ const loadMoreLimit = 8;
 const tagsSet = new Set();
 const loadedPostIds = new Set();
 
-/**
- * Limpia los listeners y estado actual
- */
 function cleanup() {
-  if (currentUnsubscribe) {
-    currentUnsubscribe();
-    currentUnsubscribe = null;
-  }
-  if (postsListener) {
-    postsListener();
-    postsListener = null;
-  }
+  if (currentUnsubscribe) currentUnsubscribe();
+  if (postsListener) postsListener();
   loadedPostIds.clear();
   tagsSet.clear();
   lastVisible = null;
 }
 
-/**
- * Publica un nuevo mensaje en la base de datos, incluyendo tags
- */
 export async function submitPost(messageInput, age, gender, tags) {
   const message = messageInput.value.trim();
   if (message === '') throw new Error('Por favor escribe un mensaje antes de publicar.');
@@ -74,6 +59,9 @@ export async function submitPost(messageInput, age, gender, tags) {
     });
     messageInput.value = '';
     getElement('#tags').value = '';
+  } catch (error) {
+    showAlert(`Error al publicar: ${error.message}`, 'error');
+    throw error;
   } finally {
     const submitBtn = getElement('#submit-button');
     submitBtn.disabled = false;
@@ -81,30 +69,36 @@ export async function submitPost(messageInput, age, gender, tags) {
   }
 }
 
-/**
- * Carga publicaciones, con opción de filtrado por tag
- */
 export async function loadPosts(loadMore = false, filterTag = 'all') {
-  // Si cambiamos filtro, limpiamos todo
   if (filterTag !== currentFilterTag) {
     cleanup();
     currentFilterTag = filterTag;
   }
-  
+
   if (loading || !hasMore) return;
   loading = true;
 
   try {
     const base = collection(db, 'mensajes');
     let q;
-    
+
     if (filterTag !== 'all') {
-      q = query(
-        base,
-        where('tags', 'array-contains', filterTag),
-        orderBy('timestamp', 'desc'),
-        limit(initialLoadLimit)
-      );
+      if (loadMore && lastVisible) {
+        q = query(
+          base,
+          where('tags', 'array-contains', filterTag),
+          orderBy('timestamp', 'desc'),
+          startAfter(lastVisible),
+          limit(loadMoreLimit)
+        );
+      } else {
+        q = query(
+          base,
+          where('tags', 'array-contains', filterTag),
+          orderBy('timestamp', 'desc'),
+          limit(initialLoadLimit)
+        );
+      }
     } else if (loadMore && lastVisible) {
       q = query(
         base,
@@ -120,29 +114,23 @@ export async function loadPosts(loadMore = false, filterTag = 'all') {
       );
     }
 
-    // Limpiar container solo si no es carga adicional
     if (!loadMore) {
       getElement('#posts').innerHTML = '';
       loadedPostIds.clear();
     }
 
-    // Cancelar listener anterior si existe
-    if (postsListener) {
-      postsListener();
-    }
+    if (postsListener) postsListener();
 
-    postsListener = onSnapshot(q, snapshot => {
+    postsListener = onSnapshot(q, (snapshot) => {
       const container = getElement('#posts');
       let newPostsAdded = false;
 
-      snapshot.forEach(docSnap => {
-        // Verificar si el post ya fue cargado
+      snapshot.forEach((docSnap) => {
         if (!loadedPostIds.has(docSnap.id)) {
           renderPost(docSnap, container);
           loadedPostIds.add(docSnap.id);
           newPostsAdded = true;
-          
-          // Acumular tags para el filtro
+
           const data = docSnap.data();
           (data.tags || []).forEach(t => tagsSet.add(t));
         }
@@ -154,28 +142,29 @@ export async function loadPosts(loadMore = false, filterTag = 'all') {
         setupCommentsListeners(snapshot);
         renderTagFilter();
       }
+    }, (error) => {
+      console.error("Error en listener de posts:", error);
+      showAlert("Error al cargar publicaciones", "error");
     });
 
+  } catch (error) {
+    console.error("Error al cargar posts:", error);
+    showAlert("Error al cargar publicaciones", "error");
   } finally {
     loading = false;
   }
 }
 
-/**
- * Dibuja la lista de tags en la barra lateral
- */
 function renderTagFilter() {
   const ul = getElement('#tag-list');
   ul.innerHTML = '';
 
-  // Opción "Todos"
   const allLi = document.createElement('li');
   allLi.textContent = 'Todos';
   allLi.classList.toggle('active', currentFilterTag === 'all');
   allLi.addEventListener('click', () => loadPosts(false, 'all'));
   ul.appendChild(allLi);
 
-  // Tags dinámicos
   Array.from(tagsSet).sort().forEach(tag => {
     const li = document.createElement('li');
     li.textContent = tag;
@@ -185,9 +174,6 @@ function renderTagFilter() {
   });
 }
 
-/**
- * Renderiza un post en el DOM, incluyendo sección de comentarios
- */
 function renderPost(docSnap, container) {
   const data = docSnap.data();
   const decrypted = decryptMessage(data.texto);
@@ -219,8 +205,14 @@ function renderPost(docSnap, container) {
 
     <div class="post-footer">
       <div class="vote-buttons">
-        <button class="like-btn" id="like-${docSnap.id}">👍 ${data.likes}</button>
-        <button class="dislike-btn" id="dislike-${docSnap.id}">👎 ${data.dislikes}</button>
+        <button class="like-btn" id="like-${docSnap.id}">
+          <span class="icon">👍</span>
+          <span class="count">${data.likes}</span>
+        </button>
+        <button class="dislike-btn" id="dislike-${docSnap.id}">
+          <span class="icon">👎</span>
+          <span class="count">${data.dislikes}</span>
+        </button>
       </div>
     </div>
 
@@ -229,33 +221,60 @@ function renderPost(docSnap, container) {
         <h4>Comentarios (${data.commentCount || 0})</h4>
       </div>
       <div id="comments-${docSnap.id}" class="comments-container"></div>
-      <div class="comment-form">
+      <form id="comment-form-${docSnap.id}" class="comment-form">
         <textarea
           id="comment-input-${docSnap.id}"
           placeholder="Escribe un comentario..."
           maxlength="500"
         ></textarea>
-        <button onclick="submitComment('${docSnap.id}')">Comentar</button>
-      </div>
+        <button type="submit">Comentar</button>
+      </form>
     </div>
   `;
+
   container.appendChild(div);
 
-  // Animación de aparición
-  setTimeout(() => div.classList.add('post-visible'), 50);
+  setTimeout(() => {
+    div.classList.add('post-visible');
 
-  // Configura botones de voto
-  setupVotingButtons(docSnap.id);
+    const likeBtn = div.querySelector(`#like-${docSnap.id}`);
+    const dislikeBtn = div.querySelector(`#dislike-${docSnap.id}`);
+
+    likeBtn.addEventListener('click', async () => {
+      try {
+        await handleVote('like', docSnap.id);
+        updateButtonStates(docSnap.id);
+      } catch (error) {
+        console.error("Error al votar:", error);
+        showAlert("Error al registrar tu voto", "error");
+      }
+    });
+
+    dislikeBtn.addEventListener('click', async () => {
+      try {
+        await handleVote('dislike', docSnap.id);
+        updateButtonStates(docSnap.id);
+      } catch (error) {
+        console.error("Error al votar:", error);
+        showAlert("Error al registrar tu voto", "error");
+      }
+    });
+
+    updateButtonStates(docSnap.id);
+    setupCommentForm(docSnap.id);
+  }, 50);
 }
 
-/**
- * Scroll infinito (solo si no hay filtro)
- */
 export function handleScroll() {
   if (currentFilterTag === 'all') {
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
     if (scrollHeight - (scrollTop + clientHeight) < 500) {
       loadPosts(true, 'all');
+    }
+  } else {
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    if (scrollHeight - (scrollTop + clientHeight) < 500) {
+      loadPosts(true, currentFilterTag);
     }
   }
 }

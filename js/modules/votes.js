@@ -2,18 +2,14 @@ import {
   db,
   updateDoc,
   doc,
-  increment
+  increment,
+  getDoc
 } from '../firebase/config.js';
+import { showAlert } from './utils.js';
 
-// Variables de estado
 let isUpdating = false;
 const voteQueue = [];
 
-/**
- * Maneja el voto (like/dislike) de una publicación
- * @param {string} type - Tipo de voto ('like' o 'dislike')
- * @param {string} postId - ID de la publicación
- */
 export async function handleVote(type, postId) {
   if (isUpdating) {
     voteQueue.push({ type, postId });
@@ -21,135 +17,135 @@ export async function handleVote(type, postId) {
   }
 
   isUpdating = true;
-  
+
+  const likeBtn = document.getElementById(`like-${postId}`);
+  const dislikeBtn = document.getElementById(`dislike-${postId}`);
+  if (likeBtn) likeBtn.disabled = true;
+  if (dislikeBtn) dislikeBtn.disabled = true;
+
   try {
-    const userVotes = getUserVotes();
+    if (!postId || typeof postId !== 'string') {
+      throw new Error("ID de publicación inválido");
+    }
+
+    const postRef = doc(db, "mensajes", postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) {
+      throw new Error("La publicación no existe");
+    }
+
+    const userVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
     const previousVote = userVotes[postId];
-    const updates = calculateVoteUpdates(type, postId, previousVote);
 
-    await updateVoteInDatabase(postId, updates);
-    updateLocalVotes(postId, type, previousVote);
-    updateButtonStates(postId, type, previousVote);
+    const updates = {};
+    if (previousVote === type) {
+      updates[`${type}s`] = increment(-1);
+      delete userVotes[postId];
+    } else {
+      if (previousVote) {
+        updates[`${previousVote}s`] = increment(-1);
+      }
+      updates[`${type}s`] = increment(1);
+      userVotes[postId] = type;
+    }
 
+    // ✅ Interfaz optimista: actualizar inmediatamente
+    updateVoteCounts(postId, type, previousVote);
+    updateButtonStates(postId);
+
+    // 🕒 Firebase en segundo plano
+    await updateDoc(postRef, updates);
+    localStorage.setItem('userVotes', JSON.stringify(userVotes));
+
+    return true;
   } catch (error) {
-    console.error("Error al votar:", error);
+    console.error("Error en handleVote:", {
+      postId,
+      error: error.message,
+      stack: error.stack
+    });
+    showAlert(`Error al votar: ${error.message}`, "error");
+
+    // ❗Revertir estado si es necesario
+    restoreVoteStates();
     throw error;
   } finally {
     isUpdating = false;
+    if (likeBtn) likeBtn.disabled = false;
+    if (dislikeBtn) dislikeBtn.disabled = false;
     processVoteQueue();
   }
 }
 
-/**
- * Obtiene los votos del usuario desde localStorage
- * @returns {Object} - Objeto con los votos del usuario
- */
-function getUserVotes() {
-  const votes = localStorage.getItem("userVotes");
-  return votes ? JSON.parse(votes) : {};
-}
-
-/**
- * Calcula las actualizaciones necesarias para el voto
- * @param {string} type - Tipo de voto
- * @param {string} postId - ID de la publicación
- * @param {string|null} previousVote - Voto previo del usuario
- * @returns {Object} - Objeto con las actualizaciones para Firestore
- */
-function calculateVoteUpdates(type, postId, previousVote) {
-  const updates = {};
-  
-  if (previousVote === type) {
-    // Si ya había votado igual, quitamos el voto
-    updates[`${type}s`] = increment(-1);
-  } else {
-    // Si había votado lo contrario, lo cambiamos
-    if (previousVote) {
-      updates[`${previousVote}s`] = increment(-1);
-    }
-    updates[`${type}s`] = increment(1);
-  }
-  
-  return updates;
-}
-
-/**
- * Actualiza el voto en la base de datos
- * @param {string} postId - ID de la publicación
- * @param {Object} updates - Actualizaciones a aplicar
- */
-async function updateVoteInDatabase(postId, updates) {
-  const postRef = doc(db, "mensajes", postId);
-  await updateDoc(postRef, updates);
-}
-
-/**
- * Actualiza los votos locales en localStorage
- * @param {string} postId - ID de la publicación
- * @param {string} type - Tipo de voto
- * @param {string|null} previousVote - Voto previo del usuario
- */
-function updateLocalVotes(postId, type, previousVote) {
-  const userVotes = getUserVotes();
-  
-  if (previousVote === type) {
-    delete userVotes[postId]; // Eliminar voto si es el mismo
-  } else {
-    userVotes[postId] = type; // Actualizar voto
-  }
-  
-  localStorage.setItem("userVotes", JSON.stringify(userVotes));
-}
-
-/**
- * Actualiza el estado visual de los botones de votación
- * @param {string} postId - ID de la publicación
- * @param {string} currentType - Tipo de voto actual
- * @param {string|null} previousVote - Voto previo del usuario
- */
-export function updateButtonStates(postId, currentType, previousVote) {
+function updateVoteCounts(postId, type, previousVote) {
   const likeBtn = document.getElementById(`like-${postId}`);
   const dislikeBtn = document.getElementById(`dislike-${postId}`);
 
-  if (likeBtn && dislikeBtn) {
-    // Resetear ambos botones primero
-    likeBtn.classList.remove("active-like");
-    dislikeBtn.classList.remove("active-dislike");
+  if (!likeBtn || !dislikeBtn) return;
 
-    // Aplicar estado activo solo al botón correspondiente
-    if (currentType === 'like' && previousVote !== currentType) {
-      likeBtn.classList.add("active-like");
-    } else if (currentType === 'dislike' && previousVote !== currentType) {
-      dislikeBtn.classList.add("active-dislike");
+  const likeCount = parseInt(likeBtn.querySelector('.count').textContent) || 0;
+  const dislikeCount = parseInt(dislikeBtn.querySelector('.count').textContent) || 0;
+
+  if (previousVote === type) {
+    if (type === 'like') {
+      likeBtn.querySelector('.count').textContent = likeCount - 1;
+    } else {
+      dislikeBtn.querySelector('.count').textContent = dislikeCount - 1;
+    }
+  } else {
+    if (previousVote) {
+      if (type === 'like') {
+        likeBtn.querySelector('.count').textContent = likeCount + 1;
+        dislikeBtn.querySelector('.count').textContent = dislikeCount - 1;
+      } else {
+        dislikeBtn.querySelector('.count').textContent = dislikeCount + 1;
+        likeBtn.querySelector('.count').textContent = likeCount - 1;
+      }
+    } else {
+      if (type === 'like') {
+        likeBtn.querySelector('.count').textContent = likeCount + 1;
+      } else {
+        dislikeBtn.querySelector('.count').textContent = dislikeCount + 1;
+      }
     }
   }
 }
 
-/**
- * Configura los event listeners para los botones de votación
- * @param {string} postId - ID de la publicación
- */
-export function setupVotingButtons(postId) {
-  const userVotes = getUserVotes();
+export function updateButtonStates(postId) {
+  const likeBtn = document.getElementById(`like-${postId}`);
+  const dislikeBtn = document.getElementById(`dislike-${postId}`);
+  const userVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
   const currentVote = userVotes[postId];
-  
-  const likeButton = document.getElementById(`like-${postId}`);
-  const dislikeButton = document.getElementById(`dislike-${postId}`);
 
-  // Aplicar estado inicial
-  updateButtonStates(postId, currentVote, null);
+  if (likeBtn && dislikeBtn) {
+    likeBtn.classList.remove('active-like');
+    dislikeBtn.classList.remove('active-dislike');
 
-  // Configurar event listeners
-  likeButton?.addEventListener("click", () => handleVote("like", postId));
-  dislikeButton?.addEventListener("click", () => handleVote("dislike", postId));
+    if (currentVote === 'like') {
+      likeBtn.classList.add('active-like');
+    } else if (currentVote === 'dislike') {
+      dislikeBtn.classList.add('active-dislike');
+    }
+  }
 }
 
-/**
- * Procesa la cola de votos pendientes
- */
 function processVoteQueue() {
   if (voteQueue.length > 0 && !isUpdating) {
     const nextVote = voteQueue.shift();
     handleVote(nextVote.type, nextVote.postId);
   }
+}
+
+export function initVotingSystem() {
+  if (!localStorage.getItem('userVotes')) {
+    localStorage.setItem('userVotes', JSON.stringify({}));
+  }
+}
+
+export function restoreVoteStates() {
+  const userVotes = JSON.parse(localStorage.getItem('userVotes') || '{}');
+  Object.keys(userVotes).forEach(postId => {
+    updateButtonStates(postId);
+  });
 }
