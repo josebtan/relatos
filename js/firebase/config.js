@@ -8,6 +8,7 @@ import {
   onSnapshot,
   updateDoc,
   doc,
+  getDocs,
   increment,
   serverTimestamp,
   getDoc,
@@ -40,6 +41,7 @@ export {
   increment,
   serverTimestamp,
   getDoc,
+  getDocs, // ✅ necesario para vista previa
   limit,
   startAfter,
   where
