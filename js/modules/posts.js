@@ -1,4 +1,4 @@
-import { 
+import {
   db,
   collection,
   addDoc,
@@ -9,6 +9,7 @@ import {
   limit,
   startAfter,
   getDoc,
+  getDocs,
   doc,
   increment,
   where
@@ -218,10 +219,12 @@ function renderPost(docSnap, container) {
 
     <div class="comments-section">
       <div class="comments-header">
-        <h4>Comentarios (${data.commentCount || 0})</h4>
+        <h4>Comentarios (<span id="comment-count-${docSnap.id}">${data.commentCount || 0}</span>)</h4>
+        <button id="toggle-comments-${docSnap.id}" class="toggle-comments-btn">Mostrar comentarios</button>
       </div>
-      <div id="comments-${docSnap.id}" class="comments-container"></div>
-      <form id="comment-form-${docSnap.id}" class="comment-form">
+      <div id="comment-preview-${docSnap.id}" class="comment-preview">Cargando vista previa...</div>
+      <div id="comments-${docSnap.id}" class="comments-container hidden"></div>
+      <form id="comment-form-${docSnap.id}" class="comment-form hidden">
         <textarea
           id="comment-input-${docSnap.id}"
           placeholder="Escribe un comentario..."
@@ -262,7 +265,34 @@ function renderPost(docSnap, container) {
 
     updateButtonStates(docSnap.id);
     setupCommentForm(docSnap.id);
+    loadCommentPreview(docSnap.id);
   }, 50);
+}
+
+async function loadCommentPreview(postId) {
+  try {
+    const commentsRef = collection(db, "mensajes", postId, "comentarios");
+    const q = query(commentsRef, orderBy("timestamp", "asc"), limit(1));
+    const snapshotPreview = await getDocs(q);
+
+    const previewContainer = document.getElementById(`comment-preview-${postId}`);
+    if (!previewContainer) return;
+
+    if (snapshotPreview.empty) {
+      previewContainer.textContent = "Sin comentarios aún.";
+      return;
+    }
+
+    const firstComment = snapshotPreview.docs[0].data();
+    const decrypted = decryptMessage(firstComment.texto || "");
+    const previewText = decrypted.length > 100 ? decrypted.slice(0, 100) + "…" : decrypted;
+
+    previewContainer.innerHTML = `
+      <div class="comment-preview-text">"${previewText}"</div>
+    `;
+  } catch (err) {
+    console.error("Error cargando vista previa de comentario:", err);
+  }
 }
 
 export function handleScroll() {

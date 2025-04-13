@@ -1,4 +1,4 @@
-import { 
+import {
   db,
   collection,
   addDoc,
@@ -26,14 +26,14 @@ export async function submitComment(postId) {
   try {
     const postRef = doc(db, "mensajes", postId);
     const postSnap = await getDoc(postRef);
-    
+
     if (!postSnap.exists()) {
       showAlert("La publicación no existe", "error");
       throw new Error("La publicación no existe");
     }
 
     const encryptedComment = encryptMessage(commentText);
-    
+
     await Promise.all([
       addDoc(collection(db, "mensajes", postId, "comentarios"), {
         texto: encryptedComment,
@@ -45,7 +45,7 @@ export async function submitComment(postId) {
     ]);
 
     commentInput.value = '';
-    
+
   } catch (error) {
     console.error("Error al publicar comentario:", error);
     showAlert(`Error al publicar: ${error.message}`, "error");
@@ -73,7 +73,7 @@ function createCommentElement(comment) {
   try {
     const decryptedText = decryptMessage(comment.texto);
     const timestamp = comment.timestamp?.toDate() || new Date();
-    
+
     return `
       <div class="comment" data-id="${comment.id}">
         <div class="comment-content">${escapeHtml(decryptedText)}</div>
@@ -94,7 +94,7 @@ function createCommentElement(comment) {
 
 export function setupCommentsListeners(postSnapshot) {
   const unsubscribes = [];
-  
+
   postSnapshot.forEach((docSnap) => {
     const commentsQuery = query(
       collection(db, "mensajes", docSnap.id, "comentarios"),
@@ -125,15 +125,19 @@ export function setupCommentForm(postId) {
   const form = document.querySelector(`#comment-form-${postId}`);
   const toggleBtn = document.querySelector(`#toggle-comments-${postId}`);
   const commentsContainer = document.querySelector(`#comments-${postId}`);
+  const preview = document.querySelector(`#comment-preview-${postId}`);
+
   if (!form || !toggleBtn || !commentsContainer) return;
 
   // Toggle de colapsar comentarios
   toggleBtn.addEventListener('click', () => {
-    commentsContainer.classList.toggle('hidden');
+    const hidden = commentsContainer.classList.toggle('hidden');
     form.classList.toggle('hidden');
-    toggleBtn.textContent = commentsContainer.classList.contains('hidden')
-      ? 'Mostrar comentarios'
-      : 'Ocultar comentarios';
+    toggleBtn.textContent = hidden ? 'Mostrar comentarios' : 'Ocultar comentarios';
+
+    if (preview) {
+      preview.classList.toggle('hidden', !hidden);
+    }
   });
 
   form.addEventListener('submit', async (e) => {
