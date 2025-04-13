@@ -846,6 +846,9 @@ body.dark-mode {
   color: var(--dark-color);
 }
 
+.dark-mode .comment-preview{
+  background-color: #2d2d2d;
+}
 /* Mostrar/Ocultar comentarios */
 .hidden {
   display: none !important;
