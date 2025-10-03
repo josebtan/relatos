@@ -19,10 +19,36 @@
   <div class="main-wrapper">
     <!-- Sidebar izquierdo - Filtros -->
     <aside id="tag-filter" class="sidebar left-sidebar">
-      <h3>Filtrar por Tema</h3>
-      <ul id="tag-list">
-        <!-- Se llenará dinámicamente -->
-      </ul>
+      <div id="extra-filters">
+        <h3>Filtrar por</h3>
+        
+        <div class="form-group">
+          <label for="filter-age-min">Edad entre:</label>
+          <div class="age-range">
+            <input type="number" id="filter-age-min" placeholder="Mín" min="13" max="99">
+            <span>-</span>
+            <input type="number" id="filter-age-max" placeholder="Máx" min="13" max="99">
+          </div>
+        </div>
+    
+        <div class="form-group">
+          <label for="filter-gender">Sexo:</label>
+          <select id="filter-gender">
+            <option value="any">Cualquiera</option>
+            <option value="masculino">Masculino</option>
+            <option value="femenino">Femenino</option>
+            <option value="none">No especificado</option>
+          </select>
+        </div>
+    
+        <div class="filter-buttons">
+          <button id="apply-filters" class="filter-btn">Aplicar filtros</button>
+          <button id="clear-filters" class="filter-btn secondary">Limpiar</button>
+        </div>
+      </div>
+      
+      <h3>Temática</h3>
+      <ul id="tag-list"></ul>
     </aside>
 
     <!-- Contenido principal -->
